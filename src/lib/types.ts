@@ -32,10 +32,29 @@ export type Product = {
 
 export type SiteSettings = {
   site_name: string;
+  logo_url: string;
+  favicon_url: string;
+  hero_eyebrow: string;
   hero_title: string;
   hero_subtitle: string;
+  hero_button_text: string;
+  hero_image_url: string;
+  announcement_enabled: boolean;
+  announcement_text: string;
+  announcement_url: string;
+  coverflow_enabled: boolean;
+  coverflow_title: string;
+  coverflow_subtitle: string;
+  footer_description: string;
+  primary_color: string;
+  secondary_color: string;
   whatsapp: string;
   instagram: string;
+  tiktok: string;
+  youtube: string;
+  facebook: string;
+  telegram: string;
+  email: string;
   products_per_page: number;
 };
 

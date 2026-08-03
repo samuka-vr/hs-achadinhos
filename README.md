@@ -125,3 +125,15 @@ src/components/          componentes de interface e CRUD
 src/lib/                 tipos, utilitários e clientes Supabase
 supabase/migrations/     banco, RLS, funções e dados iniciais
 ```
+
+## Atualização visual profissional
+
+Esta versão inclui uma interface pública totalmente renovada, vitrine Coverflow aleatória, nova navegação móvel, categorias visuais, rodapé profissional e painel administrativo com sidebar, estatísticas, upload de logo, imagem principal, imagens de categorias, cores e redes sociais.
+
+Para atualizar um banco que já estava funcionando, execute apenas:
+
+```text
+supabase/migrations/002_professional_redesign.sql
+```
+
+Depois substitua os arquivos do projeto no GitHub, execute `npm install next@15` no Codespaces e envie as alterações com `git push`.

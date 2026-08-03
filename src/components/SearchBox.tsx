@@ -5,15 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { formatPrice, normalizeSearch } from "@/lib/utils";
+import Icon from "./Icon";
 
-type SearchItem = {
-  id: string;
-  name: string;
-  slug: string;
-  image_url: string | null;
-  current_price: number | null;
-  type: "product" | "category";
-};
+type SearchItem = { id: string; name: string; slug: string; image_url: string | null; current_price: number | null; type: "product" | "category" };
 
 export default function SearchBox() {
   const router = useRouter();
@@ -24,15 +18,9 @@ export default function SearchBox() {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
+  useEffect(() => { setTerm(""); setOpen(false); }, [pathname]);
   useEffect(() => {
-    setTerm("");
-    setOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    const onDown = (event: MouseEvent) => {
-      if (!boxRef.current?.contains(event.target as Node)) setOpen(false);
-    };
+    const onDown = (event: MouseEvent) => { if (!boxRef.current?.contains(event.target as Node)) setOpen(false); };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
@@ -54,9 +42,7 @@ export default function SearchBox() {
   const results = useMemo(() => {
     const normalized = normalizeSearch(term);
     if (normalized.length < 2) return [];
-    return catalog
-      .filter((item) => normalizeSearch(item.name).includes(normalized))
-      .slice(0, 7);
+    return catalog.filter((item) => normalizeSearch(item.name).includes(normalized)).slice(0, 8);
   }, [catalog, term]);
 
   function submit(event: FormEvent) {
@@ -70,35 +56,18 @@ export default function SearchBox() {
   return (
     <div className="search-wrap" ref={boxRef}>
       <form role="search" onSubmit={submit}>
-        <input
-          className="search-input"
-          value={term}
-          onChange={(event) => { setTerm(event.target.value); setOpen(true); }}
-          onFocus={() => { void loadCatalog(); setOpen(true); }}
-          placeholder="Buscar produtos..."
-          aria-label="Buscar produtos"
-          autoComplete="off"
-        />
-        <button className="search-submit" type="submit" aria-label="Pesquisar">⌕</button>
+        <Icon name="search" className="search-leading-icon" size={19} />
+        <input className="search-input" value={term} onChange={(event) => { setTerm(event.target.value); setOpen(true); }} onFocus={() => { void loadCatalog(); setOpen(true); }} placeholder="O que você está procurando?" aria-label="Buscar produtos" autoComplete="off" />
+        <button className="search-submit" type="submit">Buscar</button>
       </form>
-      {open && term.trim().length >= 2 ? (
-        <div className="suggestions" role="listbox">
-          {results.length ? results.map((item) => (
-            <Link
-              className="suggestion"
-              key={`${item.type}-${item.id}`}
-              href={item.type === "product" ? `/produto/${item.slug}` : `/categoria/${item.slug}`}
-              onClick={() => setOpen(false)}
-            >
-              {item.image_url ? <img className="suggestion-thumb" src={item.image_url} alt="" /> : <div className="suggestion-thumb" />}
-              <span className="suggestion-meta">
-                <strong>{item.name}</strong>
-                <small>{item.type === "product" ? formatPrice(item.current_price) ?? "Produto" : "Categoria"}</small>
-              </span>
-            </Link>
-          )) : <div className="suggestion"><span className="suggestion-meta"><strong>Nenhum resultado</strong><small>Tente outra palavra.</small></span></div>}
-        </div>
-      ) : null}
+      {open && term.trim().length >= 2 ? <div className="suggestions" role="listbox">
+        <div className="suggestions-title"><span>Sugestões para você</span><small>{results.length} resultado(s)</small></div>
+        {results.length ? results.map((item) => <Link className="suggestion" key={`${item.type}-${item.id}`} href={item.type === "product" ? `/produto/${item.slug}` : `/categoria/${item.slug}`} onClick={() => setOpen(false)}>
+          {item.image_url ? <img className="suggestion-thumb" src={item.image_url} alt="" /> : <div className="suggestion-thumb suggestion-placeholder"><Icon name={item.type === "product" ? "products" : "categories"} /></div>}
+          <span className="suggestion-meta"><strong>{item.name}</strong><small>{item.type === "product" ? formatPrice(item.current_price) ?? "Ver produto" : "Ver categoria"}</small></span>
+          <Icon name="arrow" size={18} />
+        </Link>) : <div className="suggestion-empty"><Icon name="search" /><strong>Nenhum resultado</strong><small>Tente buscar com outra palavra.</small></div>}
+      </div> : null}
     </div>
   );
 }
