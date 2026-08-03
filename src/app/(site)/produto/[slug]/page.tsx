@@ -7,53 +7,7 @@ import ProductGallery from "@/components/ProductGallery";
 import ShareButton from "@/components/ShareButton";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { Product } from "@/lib/types";
-import { discountPercentage, formatPrice } from "@/lib/utils";
-
-export const dynamic = "force-dynamic";
-type PageProps = { params: Promise<{ slug: string }> };
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const supabase = getServerSupabase();
-  if (!supabase) return { title: "Produto" };
-  const { data } = await supabase.from("products").select("name,short_description,image_url").eq("slug", slug).eq("is_active", true).maybeSingle();
-  if (!data) return { title: "Produto não encontrado" };
-  return { title: data.name, description: data.short_description || `Confira ${data.name} na seleção da H&S Achadinhos.`, openGraph: { title: data.name, description: data.short_description || undefined, images: data.image_url ? [data.image_url] : [] } };
-}
-
-export default async function ProductPage({ params }: PageProps) {
-  const { slug } = await params;
-  const supabase = getServerSupabase();
-  if (!supabase) notFound();
-  const { data } = await supabase.from("products").select("*,categories(id,name,slug),product_images(*)").eq("slug", slug).eq("is_active", true).maybeSingle();
-  if (!data) notFound();
-  const product = data as Product;
-  const relatedResult = await supabase.from("products").select("*,categories(id,name,slug)").eq("is_active", true).eq("category_id", product.category_id).neq("id", product.id).limit(4);
-  const related = (relatedResult.data ?? []) as Product[];
-  const discount = discountPercentage(product.current_price, product.old_price);
-  const productSchema = { "@context": "https://schema.org", "@type": "Product", name: product.name, image: product.image_url || undefined, description: product.short_description || undefined, offers: product.current_price !== null ? { "@type": "Offer", priceCurrency: "BRL", price: product.current_price, availability: "https://schema.org/InStock", url: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/go/${product.id}` } : undefined };
-
-  return (
-    <main className="page product-page">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
-      <div className="container">
-        <nav className="breadcrumbs"><Link href="/">Início</Link><span>/</span><Link href={`/categoria/${product.categories?.slug}`}>{product.categories?.name ?? "Categoria"}</Link><span>/</span><strong>{product.name}</strong></nav>
-        <div className="product-detail-pro">
-          <div className="product-detail-media-wrap"><ProductGallery name={product.name} cover={product.image_url} images={product.product_images || []} />{product.badge ? <span className="product-badge">{product.badge}</span> : null}{discount ? <span className="detail-discount">-{discount}%</span> : null}</div>
-          <div className="product-detail-copy">
-            <Link className="product-category" href={`/categoria/${product.categories?.slug}`}>{product.categories?.name ?? "Achadinho"}</Link>
-            <h1>{product.name}</h1>
-            <div className="detail-interest"><Icon name="click" size={17} />{product.click_count > 0 ? `${product.click_count} clique(s) neste produto` : "Produto novo"}</div>
-            <div className="price-row detail-price-row">{product.current_price !== null ? <span className="current-price">{formatPrice(product.current_price)}</span> : <span className="current-price">Confira o preço</span>}{product.old_price !== null ? <span className="old-price">{formatPrice(product.old_price)}</span> : null}</div>
-            {product.short_description ? <p className="detail-description">{product.short_description}</p> : null}
-            {product.tags?.length ? <div className="detail-tags">{product.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div> : null}
-            <div className="product-detail-actions"><a className="button detail-main-button" href={`/go/${product.id}`} target="_blank" rel="nofollow sponsored noopener">Ver oferta na Shopee <Icon name="external" size={18} /></a><ShareButton title={product.name} /></div>
-            <div className="detail-benefits"><div><Icon name="check" /><span><strong>Compra pela Shopee</strong><small>O pedido é finalizado na página do vendedor.</small></span></div><div><Icon name="search" /><span><strong>Confira os detalhes</strong><small>Veja frete, avaliações e prazo antes de comprar.</small></span></div></div>
-            <div className="notice">O preço, o estoque e as condições podem mudar na Shopee. Confira as informações finais na página do vendedor antes da compra.</div>
-          </div>
-        </div>
-        <section className="section"><div className="section-head section-head-pro"><div><span className="section-eyebrow">Mais opções</span><h2>Outros da mesma categoria</h2><p>Talvez algum deles também sirva para você.</p></div></div><ProductGrid products={related} emptyTitle="Ainda não há produtos relacionados" /></section>
-      </div>
-    </main>
-  );
-}
+import { discountPercentage,formatPrice } from "@/lib/utils";
+export const dynamic="force-dynamic";type Props={params:Promise<{slug:string}>};
+export async function generateMetadata({params}:Props):Promise<Metadata>{const{slug}=await params;const supabase=getServerSupabase();if(!supabase)return{title:"Produto"};const{data}=await supabase.from("products").select("name,short_description,image_url,seo_title,seo_description").eq("slug",slug).eq("is_active",true).maybeSingle();if(!data)return{title:"Produto não encontrado"};const title=data.seo_title||data.name;const description=data.seo_description||data.short_description||`Confira ${data.name} na H&S Achadinhos.`;return{title,description,openGraph:{title,description,images:data.image_url?[data.image_url]:[]}};}
+export default async function ProductPage({params}:Props){const{slug}=await params;const supabase=getServerSupabase();if(!supabase)notFound();const{data}=await supabase.from("products").select("*,categories(id,name,slug),product_images(*)").eq("slug",slug).eq("is_active",true).maybeSingle();if(!data)notFound();const product=data as Product;const relatedResult=await supabase.from("products").select("*,categories(id,name,slug)").eq("is_active",true).eq("category_id",product.category_id).neq("id",product.id).limit(8);const related=(relatedResult.data??[]) as Product[];const discount=discountPercentage(product.current_price,product.old_price);return <main className="product-page-v5"><div className="container-v5"><nav className="breadcrumbs-v5"><Link href="/">Início</Link><span>›</span><Link href={`/categoria/${product.categories?.slug}`}>{product.categories?.name||"Categoria"}</Link><span>›</span><strong>{product.name}</strong></nav><div className="product-detail-v5"><div className="product-gallery-shell-v5"><ProductGallery name={product.name} cover={product.image_url} images={product.product_images||[]}/></div><div className="product-info-v5"><div className="product-detail-labels-v5">{product.is_video_product?<span>Produto do vídeo</span>:null}{product.badge?<span>{product.badge}</span>:null}{discount?<b>-{discount}%</b>:null}</div><Link className="product-category-v5" href={`/categoria/${product.categories?.slug}`}>{product.categories?.name||"Achadinho"}</Link><h1>{product.name}</h1>{product.product_code?<div className="product-detail-code-v5"><span>Código para buscar</span><strong>{product.product_code}</strong></div>:null}<div className="product-detail-price-v5">{product.current_price!==null?<strong>{formatPrice(product.current_price)}</strong>:<strong>Confira o preço na Shopee</strong>}{product.old_price!==null?<del>{formatPrice(product.old_price)}</del>:null}</div>{product.short_description?<p className="product-detail-description-v5">{product.short_description}</p>:null}{product.tags?.length?<div className="product-tags-v5">{product.tags.map((tag)=><span key={tag}>{tag}</span>)}</div>:null}<div className="product-detail-actions-v5"><a href={`/go/${product.id}`} target="_blank" rel="nofollow sponsored noopener">Ver produto na Shopee <Icon name="external" size={18}/></a><ShareButton title={product.name}/></div>{product.video_url?<a className="video-source-v5" href={product.video_url} target="_blank" rel="noreferrer"><Icon name="tiktok"/>Ver o vídeo onde mostramos este produto</a>:null}<div className="product-notes-v5"><div><Icon name="shield"/><span><strong>Compra finalizada na Shopee</strong><small>Frete, estoque e pagamento são conferidos por lá.</small></span></div><div><Icon name="click"/><span><strong>{product.click_count} acesso(s)</strong><small>O preço pode mudar sem aviso.</small></span></div></div></div></div><section className="section-v5"><div className="section-head-v5"><div><span>MAIS OPÇÕES</span><h2>Da mesma categoria</h2><p>Outros produtos que podem interessar.</p></div></div><ProductGrid products={related} emptyTitle="Ainda não há produtos relacionados"/></section></div></main>}

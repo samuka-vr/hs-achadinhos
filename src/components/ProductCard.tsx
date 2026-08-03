@@ -5,20 +5,18 @@ import Icon from "./Icon";
 
 export default function ProductCard({ product }: { product: Product }) {
   const discount = discountPercentage(product.current_price, product.old_price);
-  return (
-    <article className="product-card clean-product-card">
-      <Link className="product-card-media-link" href={`/produto/${product.slug}`} aria-label={`Abrir ${product.name}`}>
-        <div className="product-image-wrap">
-          {product.image_url ? <img className="product-image" src={product.image_url} alt={product.name} loading="lazy" /> : <div className="product-placeholder"><Icon name="image" size={28} /><span>Sem imagem</span></div>}
-          {product.badge || discount ? <div className="clean-product-flags">{product.badge ? <span>{product.badge}</span> : null}{discount ? <b>-{discount}%</b> : null}</div> : null}
-        </div>
-      </Link>
-      <div className="product-content">
-        <small>{product.categories?.name ?? "Achadinho"}</small>
-        <h3 className="product-title"><Link href={`/produto/${product.slug}`}>{product.name}</Link></h3>
-        <div className="price-row">{product.current_price !== null ? <span className="current-price">{formatPrice(product.current_price)}</span> : <span className="current-price price-callout">Ver preço</span>}{product.old_price !== null ? <span className="old-price">{formatPrice(product.old_price)}</span> : null}</div>
-        <a className="clean-product-action" href={`/go/${product.id}`} target="_blank" rel="nofollow sponsored noopener">Abrir na Shopee <Icon name="external" size={16} /></a>
-      </div>
-    </article>
-  );
+  return <article className="product-card-v5">
+    <Link className="product-card-image-v5" href={`/produto/${product.slug}`} aria-label={`Abrir ${product.name}`}>
+      {product.image_url ? <img src={product.image_url} alt={product.name} loading="lazy" /> : <div className="product-placeholder-v5"><Icon name="image" size={28}/><span>Sem imagem</span></div>}
+      <div className="product-flags-v5">{product.is_video_product ? <span>Do vídeo</span> : null}{product.badge ? <span>{product.badge}</span> : null}{discount ? <b>-{discount}%</b> : null}</div>
+      {product.is_pinned ? <i className="product-pin-v5">Fixado</i> : null}
+    </Link>
+    <div className="product-card-body-v5">
+      <div className="product-card-meta-v5"><span>{product.categories?.name || "Achadinho"}</span>{product.product_code ? <b className="product-code-v5">Cód. {product.product_code}</b> : null}</div>
+      <h3><Link href={`/produto/${product.slug}`}>{product.name}</Link></h3>
+      <div className="product-price-v5">{product.current_price !== null ? <strong>{formatPrice(product.current_price)}</strong> : <strong>Ver preço</strong>}{product.old_price !== null ? <del>{formatPrice(product.old_price)}</del> : null}</div>
+      <span className="product-clicks-v5">{product.click_count} acesso(s)</span>
+      <a className="product-action-v5" href={`/go/${product.id}`} target="_blank" rel="nofollow sponsored noopener">Ver na Shopee <Icon name="external" size={15}/></a>
+    </div>
+  </article>;
 }

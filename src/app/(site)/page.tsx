@@ -1,101 +1,41 @@
 import Link from "next/link";
+import BannerCarousel from "@/components/BannerCarousel";
 import CategoryStories from "@/components/CategoryStories";
 import Icon from "@/components/Icon";
-import ProductCoverflow from "@/components/ProductCoverflow";
 import ProductExplorer from "@/components/ProductExplorer";
 import ProductGrid from "@/components/ProductGrid";
+import ProductRail from "@/components/ProductRail";
 import SearchBox from "@/components/SearchBox";
 import { getServerSupabase } from "@/lib/supabase/server";
-import type { Category, Product } from "@/lib/types";
-import { parseSettings } from "@/lib/utils";
+import type { Banner, Category, HomeSection, Product } from "@/lib/types";
+import { parseSettings, safeNumber } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const supabase = getServerSupabase();
-  let products: Product[] = [];
-  let categories: Category[] = [];
-  let settings = parseSettings(null);
+const fallbackSections: HomeSection[] = [
+  {id:"hero",section_key:"hero",section_type:"hero",title:"Encontre o produto do vídeo",subtitle:"Digite o nome ou o código que apareceu no conteúdo.",eyebrow:"Link da bio",is_enabled:true,sort_order:10,settings:{show_search:true,layout:"compact"},created_at:"",updated_at:""},
+  {id:"video",section_key:"video-products",section_type:"video_products",title:"Produtos dos últimos vídeos",subtitle:"Os links mais recentes ficam primeiro.",eyebrow:"Viu no vídeo?",is_enabled:true,sort_order:30,settings:{limit:12},created_at:"",updated_at:""},
+  {id:"categories",section_key:"categories",section_type:"categories",title:"Categorias",subtitle:"Escolha uma área para encontrar mais rápido.",eyebrow:"",is_enabled:true,sort_order:40,settings:{limit:12},created_at:"",updated_at:""},
+  {id:"newest",section_key:"newest",section_type:"newest",title:"Acabaram de chegar",subtitle:"Novos produtos adicionados ao catálogo.",eyebrow:"",is_enabled:true,sort_order:50,settings:{limit:8},created_at:"",updated_at:""},
+  {id:"catalog",section_key:"catalog",section_type:"catalog",title:"Todos os produtos",subtitle:"Use a busca ou filtre por categoria.",eyebrow:"",is_enabled:true,sort_order:70,settings:{page_size:24},created_at:"",updated_at:""},
+];
 
-  if (supabase) {
-    const [productsResult, categoriesResult, settingsResult] = await Promise.all([
-      supabase.from("products").select("*,categories(id,name,slug)").eq("is_active", true).order("created_at", { ascending: false }).limit(500),
-      supabase.from("categories").select("*").eq("is_active", true).order("sort_order").order("name"),
-      supabase.from("site_settings").select("key,value"),
-    ]);
-    products = (productsResult.data ?? []) as Product[];
-    categories = (categoriesResult.data ?? []) as Category[];
-    settings = parseSettings(settingsResult.data);
-  }
-
-  const trending = [...products].sort((a, b) => b.click_count - a.click_count).slice(0, 8);
-  const newest = [...products].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
-  const videoLinks = [...products]
-    .sort((a, b) => Number(b.is_featured) - Number(a.is_featured) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 14);
-
-  return (
-    <main className="page home-page">
-      <div className="container">
-        <section className="bio-entry" aria-labelledby="bio-entry-title">
-          <div className="bio-entry-copy">
-            <span className="bio-entry-badge"><Icon name="sparkles" size={16} />{settings.hero_eyebrow}</span>
-            <h1 id="bio-entry-title">{settings.hero_title}</h1>
-            <p>{settings.hero_subtitle}</p>
-            <div className="bio-entry-search"><SearchBox /></div>
-            <div className="bio-entry-actions">
-              <a className="button" href="#ultimos-links">{settings.hero_button_text}<Icon name="arrow" size={17} /></a>
-              <a className="button secondary" href="#categorias">Ver categorias</a>
-            </div>
-          </div>
-          <div className="bio-entry-help" aria-label="Como encontrar o produto">
-            <strong>É bem simples</strong>
-            <ol>
-              <li><span>1</span><p><b>Veja os últimos links</b><small>Os produtos dos vídeos mais recentes aparecem primeiro.</small></p></li>
-              <li><span>2</span><p><b>Toque na foto</b><small>Você abre os detalhes do achadinho.</small></p></li>
-              <li><span>3</span><p><b>Ir para a Shopee</b><small>O botão leva direto ao link do produto.</small></p></li>
-            </ol>
-          </div>
-        </section>
-
-        {settings.coverflow_enabled && videoLinks.length ? (
-          <section className="home-slider-section bio-links-section" id="ultimos-links" aria-label="Últimos produtos divulgados">
-            <div className="simple-section-head">
-              <div><span className="section-kicker">LINK DA BIO</span><h2>{settings.coverflow_title}</h2><p>{settings.coverflow_subtitle}</p></div>
-              <a href="#produtos">Ver todos <Icon name="arrow" size={16} /></a>
-            </div>
-            <ProductCoverflow products={videoLinks} speed={settings.carousel_speed} randomize={false} />
-          </section>
-        ) : null}
-
-        {settings.show_categories && categories.length ? (
-          <section className="section simple-section" id="categorias">
-            <div className="simple-section-head"><div><h2>Categorias</h2><p>Toque em uma bolinha para filtrar.</p></div></div>
-            <CategoryStories categories={categories} />
-          </section>
-        ) : null}
-
-        {settings.show_newest && newest.length ? (
-          <section className="section simple-section" id="novidades">
-            <div className="simple-section-head"><div><h2>Últimos achadinhos</h2><p>Os produtos cadastrados mais recentemente.</p></div></div>
-            <ProductGrid products={newest} />
-          </section>
-        ) : null}
-
-        {settings.show_trending && trending.length ? (
-          <section className="section simple-section" id="em-alta">
-            <div className="simple-section-head"><div><h2>Mais acessados</h2><p>O que o pessoal mais abriu por aqui.</p></div><Link href="#produtos">Ver todos <Icon name="arrow" size={16} /></Link></div>
-            <ProductGrid products={trending} />
-          </section>
-        ) : null}
-
-        {settings.show_catalog ? (
-          <section className="section simple-section catalog-section-clean" id="produtos">
-            <div className="simple-section-head"><div><h2>Todos os produtos</h2><p>Pesquise pelo nome ou use os filtros.</p></div></div>
-            <ProductExplorer products={products} categories={categories} pageSize={settings.products_per_page || 24} />
-          </section>
-        ) : null}
-      </div>
-    </main>
-  );
+export default async function HomePage(){
+ const supabase=getServerSupabase();let products:Product[]=[];let categories:Category[]=[];let sections:HomeSection[]=fallbackSections;let banners:Banner[]=[];let settings=parseSettings(null);
+ if(supabase){const[p,c,s,h,b]=await Promise.all([supabase.from("products").select("*,categories(id,name,slug)").eq("is_active",true).order("is_pinned",{ascending:false}).order("created_at",{ascending:false}).limit(500),supabase.from("categories").select("*").eq("is_active",true).order("sort_order").order("name"),supabase.from("site_settings").select("key,value"),supabase.from("home_sections").select("*").order("sort_order"),supabase.from("banners").select("*").eq("is_active",true).order("sort_order")]);products=(p.data??[]) as Product[];categories=(c.data??[]) as Category[];settings=parseSettings(s.data);if(h.data?.length)sections=h.data as HomeSection[];const now=Date.now();banners=((b.data??[]) as Banner[]).filter((item)=>(!item.starts_at||new Date(item.starts_at).getTime()<=now)&&(!item.ends_at||new Date(item.ends_at).getTime()>=now));}
+ const videoProducts=[...products].filter((p)=>p.is_video_product||p.is_featured).sort((a,b)=>Number(b.is_pinned)-Number(a.is_pinned)||(new Date(b.video_posted_at||b.created_at).getTime()-new Date(a.video_posted_at||a.created_at).getTime()));
+ const newest=[...products].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
+ const trending=[...products].sort((a,b)=>b.click_count-a.click_count);
+ function sectionHead(section:HomeSection,id?:string){return <div className="section-head-v5" id={id}><div>{section.eyebrow?<span>{section.eyebrow}</span>:null}<h2>{section.title}</h2>{section.subtitle?<p>{section.subtitle}</p>:null}</div>{["newest","trending","video_products"].includes(section.section_type)?<Link href="#produtos">Ver todos <Icon name="arrow" size={16}/></Link>:null}</div>}
+ return <main className="home-v5"><div className="container-v5">{sections.filter((x)=>x.is_enabled).sort((a,b)=>a.sort_order-b.sort_order).map((section)=>{
+   if(section.section_type==="hero")return <section className={`hero-v5 layout-${String(section.settings.layout||"compact")} align-${String(section.settings.alignment||"left")}`} key={section.id}><div className="hero-copy-v5">{section.eyebrow?<span><Icon name="sparkles" size={15}/>{section.eyebrow}</span>:null}<h1>{section.title||settings.hero_title}</h1><p>{section.subtitle||settings.hero_subtitle}</p>{Boolean(section.settings.show_search??true)?<SearchBox variant="hero"/>:null}{Boolean(section.settings.show_steps??true)?<div className="hero-help-v5"><span><b>1</b>Digite o nome ou código</span><span><b>2</b>Abra o produto</span><span><b>3</b>Confira na Shopee</span></div>:null}</div>{String(section.settings.layout||"compact")==="split"?<div className="hero-visual-v5"><img src={settings.hero_image_url||settings.logo_url} alt=""/></div>:null}</section>;
+   if(section.section_type==="banners")return banners.length?<section className="section-v5 banner-section-v5" key={section.id}><BannerCarousel banners={banners} autoplay={Boolean(section.settings.autoplay??true)} interval={safeNumber(section.settings.interval,5000)} height={String(section.settings.height||"medium")}/></section>:null;
+   if(section.section_type==="video_products"){const limit=safeNumber(section.settings.limit,12);const layout=String(section.settings.layout||"rail");return videoProducts.length?<section className="section-v5" id="produtos-dos-videos" key={section.id}>{sectionHead(section)}{layout==="grid"?<ProductGrid products={videoProducts.slice(0,limit)} columns={safeNumber(section.settings.columns,4)}/>:<ProductRail products={videoProducts.slice(0,limit)} autoplay={Boolean(section.settings.autoplay??true)} interval={safeNumber(section.settings.interval,settings.carousel_speed)}/>}</section>:null;}
+   if(section.section_type==="categories"){const limit=safeNumber(section.settings.limit,12);const variant=String(section.settings.style||"stories")==="cards"?"cards":"stories";return categories.length?<section className="section-v5" key={section.id}>{sectionHead(section,"categorias")}<CategoryStories categories={categories.slice(0,limit)} variant={variant}/></section>:null;}
+   if(section.section_type==="newest"){const limit=safeNumber(section.settings.limit,8);return newest.length?<section className="section-v5" key={section.id}>{sectionHead(section,"novidades")}<ProductGrid products={newest.slice(0,limit)} columns={safeNumber(section.settings.columns,4)}/></section>:null;}
+   if(section.section_type==="trending"){const limit=safeNumber(section.settings.limit,8);return trending.length?<section className="section-v5" key={section.id}>{sectionHead(section,"mais-acessados")}<ProductGrid products={trending.slice(0,limit)} columns={safeNumber(section.settings.columns,4)}/></section>:null;}
+   if(section.section_type==="catalog")return <section className="section-v5 catalog-section-v5" id="produtos" key={section.id}>{sectionHead(section)}<ProductExplorer products={products} categories={categories} pageSize={safeNumber(section.settings.page_size,settings.products_per_page||24)}/></section>;
+   if(section.section_type==="custom_text")return <section className={`section-v5 custom-block-v5 align-${String(section.settings.alignment||"left")}`} key={section.id}>{sectionHead(section)}{section.settings.body?<div className="custom-block-body-v5">{String(section.settings.body)}</div>:null}{section.settings.button_text?<a className="button-v5" href={String(section.settings.button_url||"#produtos")}>{String(section.settings.button_text)}<Icon name="arrow" size={16}/></a>:null}</section>;
+   return null;
+ })}</div></main>;
 }

@@ -1,20 +1,10 @@
 import type { CSSProperties } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageTracker from "@/components/PageTracker";
 import { getServerSupabase } from "@/lib/supabase/server";
-import type { Category } from "@/lib/types";
+import type { Category,NavigationItem } from "@/lib/types";
 import { parseSettings } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
-export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const supabase = getServerSupabase();
-  const [settingsResult, categoriesResult] = supabase ? await Promise.all([
-    supabase.from("site_settings").select("key,value"),
-    supabase.from("categories").select("*").eq("is_active", true).order("sort_order").order("name"),
-  ]) : [{ data: null }, { data: [] }];
-  const settings = parseSettings(settingsResult.data);
-  const categories = (categoriesResult.data ?? []) as Category[];
-  const style = { "--brand": settings.primary_color, "--brand-soft": settings.secondary_color } as CSSProperties;
-  return <div className="site-theme" style={style}><Header settings={settings} categories={categories} />{children}<Footer settings={settings} categories={categories} /></div>;
-}
+export const dynamic="force-dynamic";
+export default async function SiteLayout({children}:{children:React.ReactNode}){const supabase=getServerSupabase();const[s,c,n]=supabase?await Promise.all([supabase.from("site_settings").select("key,value"),supabase.from("categories").select("*").eq("is_active",true).order("sort_order").order("name"),supabase.from("navigation_items").select("*").eq("is_active",true).order("sort_order")]):[{data:null},{data:[]},{data:[]}];const settings=parseSettings(s.data);const categories=(c.data??[]) as Category[];const navigation=(n.data??[]) as NavigationItem[];const style={"--brand":settings.primary_color,"--brand-soft":settings.secondary_color,"--accent":settings.accent_color,"--site-bg":settings.background_color,"--surface":settings.surface_color,"--text":settings.text_color,"--muted":settings.muted_text_color,"--border":settings.border_color,"--button-text":settings.button_text_color,"--container":`${settings.container_width}px`,"--radius":`${settings.corner_radius}px`,"--mobile-columns":settings.product_columns_mobile,"--desktop-columns":settings.product_columns_desktop,"--font-body":settings.font_family==="System"?"system-ui":settings.font_family,"--font-heading":settings.heading_font_family==="System"?"system-ui":settings.heading_font_family} as CSSProperties;const classes=["site-theme-v5",`card-style-${settings.card_style}`,settings.show_prices?"show-prices":"hide-prices",settings.show_product_codes?"show-codes":"hide-codes",settings.show_click_count?"show-clicks":"hide-clicks"].join(" ");return <div className={classes} style={style}><style dangerouslySetInnerHTML={{__html:settings.custom_css||""}}/><PageTracker/><Header settings={settings} categories={categories} navigation={navigation}/>{children}<Footer settings={settings} categories={categories} navigation={navigation}/></div>}

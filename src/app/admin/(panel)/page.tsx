@@ -1,70 +1,11 @@
 "use client";
-
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import ClicksChart, { type ChartPoint } from "@/components/ClicksChart";
+import { useEffect,useMemo,useState } from "react";
+import ClicksChart,{type ChartPoint} from "@/components/ClicksChart";
 import Icon from "@/components/Icon";
 import { getBrowserSupabase } from "@/lib/supabase/client";
-
- type ProductStat = { id: string; name: string; click_count: number; category_id: string; image_url: string | null; is_active: boolean; categories: { name: string } | null };
-type ClickRow = { clicked_at: string };
-function startOfDay(date: Date) { const value = new Date(date); value.setHours(0, 0, 0, 0); return value; }
-
-export default function AdminDashboardPage() {
-  const [products, setProducts] = useState<ProductStat[]>([]);
-  const [categoryCount, setCategoryCount] = useState(0);
-  const [clicks, setClicks] = useState<ClickRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const supabase = getBrowserSupabase(); if (!supabase) return;
-    void (async () => {
-      const since = new Date(); since.setDate(since.getDate() - 29); since.setHours(0, 0, 0, 0);
-      const [productsResult, categoriesResult, clicksResult] = await Promise.all([
-        supabase.from("products").select("id,name,click_count,category_id,image_url,is_active,categories(name)").order("click_count", { ascending: false }),
-        supabase.from("categories").select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("product_clicks").select("clicked_at").gte("clicked_at", since.toISOString()).order("clicked_at"),
-      ]);
-      if (productsResult.error || categoriesResult.error || clicksResult.error) setError("Não foi possível carregar todas as estatísticas.");
-      setProducts((productsResult.data ?? []) as unknown as ProductStat[]); setCategoryCount(categoriesResult.count ?? 0); setClicks((clicksResult.data ?? []) as ClickRow[]); setLoading(false);
-    })();
-  }, []);
-
-  const stats = useMemo(() => {
-    const now = new Date(); const today = startOfDay(now); const seven = new Date(today); seven.setDate(seven.getDate() - 6); const thirty = new Date(today); thirty.setDate(thirty.getDate() - 29);
-    const todayCount = clicks.filter((item) => new Date(item.clicked_at) >= today).length;
-    const sevenCount = clicks.filter((item) => new Date(item.clicked_at) >= seven).length;
-    const thirtyCount = clicks.filter((item) => new Date(item.clicked_at) >= thirty).length;
-    const points: ChartPoint[] = [];
-    for (let index = 29; index >= 0; index--) { const date = new Date(today); date.setDate(date.getDate() - index); const key = date.toISOString().slice(0, 10); points.push({ date: key, clicks: clicks.filter((item) => item.clicked_at.slice(0, 10) === key).length }); }
-    const categories = new Map<string, number>();
-    for (const product of products) { const name = product.categories?.name || "Sem categoria"; categories.set(name, (categories.get(name) || 0) + Number(product.click_count || 0)); }
-    const totalClicks = products.reduce((sum, item) => sum + Number(item.click_count || 0), 0);
-    return { todayCount, sevenCount, thirtyCount, totalClicks, points, topCategories: [...categories.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6) };
-  }, [clicks, products]);
-
-  if (loading) return <div className="admin-loading-inline">Carregando visão geral...</div>;
-  const activeProducts = products.filter((item) => item.is_active);
-
-  return (
-    <>
-      <div className="admin-page-heading"><div><span className="admin-eyebrow">PAINEL</span><h1>Visão geral</h1><p>Produtos, categorias e cliques em um só lugar.</p></div><div className="admin-heading-actions"><Link className="admin-button secondary" href="/" target="_blank">Ver site <Icon name="external" /></Link><Link className="admin-button" href="/admin/produtos"><Icon name="plus" />Novo produto</Link></div></div>
-      {error ? <div className="error">{error}</div> : null}
-      <div className="admin-stat-grid">
-        <div className="admin-stat-card tone-pink"><span className="admin-stat-icon"><Icon name="products" /></span><div><small>Produtos ativos</small><strong>{activeProducts.length}</strong><em>{products.length - activeProducts.length} inativo(s)</em></div></div>
-        <div className="admin-stat-card tone-purple"><span className="admin-stat-icon"><Icon name="categories" /></span><div><small>Categorias</small><strong>{categoryCount}</strong><em>categorias ativas</em></div></div>
-        <div className="admin-stat-card tone-blue"><span className="admin-stat-icon"><Icon name="click" /></span><div><small>Cliques hoje</small><strong>{stats.todayCount}</strong><em>{stats.sevenCount} nos últimos 7 dias</em></div></div>
-        <div className="admin-stat-card tone-dark"><span className="admin-stat-icon"><Icon name="chart" /></span><div><small>Cliques totais</small><strong>{stats.totalClicks}</strong><em>{stats.thirtyCount} nos últimos 30 dias</em></div></div>
-      </div>
-      <div className="admin-dashboard-grid">
-        <section className="admin-panel admin-chart-panel"><div className="admin-panel-head"><div><small>DESEMPENHO</small><h2>Cliques nos últimos 30 dias</h2></div><span className="admin-panel-badge"><Icon name="chart" size={16} />30 dias</span></div><ClicksChart data={stats.points} /></section>
-        <section className="admin-panel admin-quick-panel"><div className="admin-panel-head"><div><small>ATALHOS</small><h2>Ações rápidas</h2></div></div><div className="admin-quick-links"><Link href="/admin/produtos"><span><Icon name="plus" /></span><div><strong>Adicionar produto</strong><small>Nome, link, preços e imagens</small></div><Icon name="arrow" /></Link><Link href="/admin/categorias"><span><Icon name="categories" /></span><div><strong>Organizar categorias</strong><small>Imagem, emoji, ordem e status</small></div><Icon name="arrow" /></Link><Link href="/admin/configuracoes"><span><Icon name="settings" /></span><div><strong>Personalizar site</strong><small>Marca, seções, cores e redes</small></div><Icon name="arrow" /></Link></div></section>
-      </div>
-      <div className="admin-dashboard-grid admin-lists-grid">
-        <section className="admin-panel"><div className="admin-panel-head"><div><small>PRODUTOS</small><h2>Mais clicados</h2></div><Link href="/admin/produtos">Ver todos <Icon name="arrow" size={16} /></Link></div><div className="admin-ranking-list">{products.slice(0, 6).map((product, index) => <div key={product.id}><span className="rank-number">{String(index + 1).padStart(2, "0")}</span>{product.image_url ? <img src={product.image_url} alt="" /> : <span className="rank-placeholder"><Icon name="products" size={17} /></span>}<div><strong>{product.name}</strong><small>{product.categories?.name || "Sem categoria"}</small></div><b>{product.click_count}<small> cliques</small></b></div>)}</div></section>
-        <section className="admin-panel"><div className="admin-panel-head"><div><small>CATEGORIAS</small><h2>Mais procuradas</h2></div></div><div className="admin-category-ranking">{stats.topCategories.map(([name, count], index) => { const max = stats.topCategories[0]?.[1] || 1; return <div key={name}><div><strong>{name}</strong><span>{count} cliques</span></div><div className="ranking-track"><span style={{ width: `${Math.max(5, (count / max) * 100)}%` }} /></div><small>#{index + 1}</small></div>; })}</div></section>
-      </div>
-    </>
-  );
-}
+type ProductRow={id:string;name:string;image_url:string|null;click_count:number;is_active:boolean;is_video_product:boolean;product_code:string|null;affiliate_url:string;categories:{name:string}|null};type ClickRow={clicked_at:string};type SearchRow={query:string;results_count:number;searched_at:string};type ViewRow={viewed_at:string};
+export default function AdminDashboardPage(){const[products,setProducts]=useState<ProductRow[]>([]);const[categoryCount,setCategoryCount]=useState(0);const[clicks,setClicks]=useState<ClickRow[]>([]);const[searches,setSearches]=useState<SearchRow[]>([]);const[views,setViews]=useState<ViewRow[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState("");useEffect(()=>{const supabase=getBrowserSupabase();if(!supabase)return;void(async()=>{const since=new Date();since.setDate(since.getDate()-29);const[p,c,cl,s,v]=await Promise.all([supabase.from("products").select("id,name,image_url,click_count,is_active,is_video_product,product_code,affiliate_url,categories(name)").order("click_count",{ascending:false}),supabase.from("categories").select("id",{count:"exact",head:true}).eq("is_active",true),supabase.from("product_clicks").select("clicked_at").gte("clicked_at",since.toISOString()),supabase.from("search_events").select("query,results_count,searched_at").gte("searched_at",since.toISOString()),supabase.from("page_views").select("viewed_at").gte("viewed_at",since.toISOString())]);if(p.error)setError("Não foi possível carregar todos os dados.");setProducts((p.data??[]) as unknown as ProductRow[]);setCategoryCount(c.count??0);setClicks((cl.data??[]) as ClickRow[]);setSearches((s.data??[]) as SearchRow[]);setViews((v.data??[]) as ViewRow[]);setLoading(false);})();},[]);
+ const stats=useMemo(()=>{const today=new Date();today.setHours(0,0,0,0);const seven=new Date(today);seven.setDate(seven.getDate()-6);const points:ChartPoint[]=[];for(let i=29;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const key=d.toISOString().slice(0,10);points.push({date:key,clicks:clicks.filter((x)=>x.clicked_at.slice(0,10)===key).length});}const q=new Map<string,number>();searches.forEach((x)=>q.set(x.query.toLowerCase(),(q.get(x.query.toLowerCase())||0)+1));return{todayClicks:clicks.filter((x)=>new Date(x.clicked_at)>=today).length,sevenClicks:clicks.filter((x)=>new Date(x.clicked_at)>=seven).length,todayViews:views.filter((x)=>new Date(x.viewed_at)>=today).length,zeroSearches:searches.filter((x)=>x.results_count===0).length,points,topQueries:[...q.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6)};},[clicks,searches,views]);
+ if(loading)return <div className="admin-loading-inline">Carregando visão geral...</div>;
+ const problems=products.filter((p)=>!p.image_url||!p.affiliate_url||!p.product_code);return <><div className="admin-page-heading-v5"><div><span>PAINEL</span><h1>Visão geral</h1><p>O que está acontecendo no site e o que precisa da sua atenção.</p></div><div><Link className="admin-button-v5 secondary" href="/admin/editor"><Icon name="layout"/>Editar home</Link><Link className="admin-button-v5" href="/admin/produtos"><Icon name="plus"/>Novo produto</Link></div></div>{error?<div className="admin-alert-v5 error">{error}</div>:null}<div className="analytics-stats-v5 dashboard-stats-v5"><article><Icon name="products"/><span><small>Produtos publicados</small><strong>{products.filter((p)=>p.is_active).length}</strong></span></article><article><Icon name="eye"/><span><small>Visitas hoje</small><strong>{stats.todayViews}</strong></span></article><article><Icon name="click"/><span><small>Cliques hoje</small><strong>{stats.todayClicks}</strong></span></article><article><Icon name="search"/><span><small>Buscas sem resultado</small><strong>{stats.zeroSearches}</strong></span></article></div><div className="dashboard-v5-grid"><section className="admin-card-v5 dashboard-chart-v5"><div className="admin-card-head-v5"><div><small>ÚLTIMOS 30 DIAS</small><h2>Cliques para a Shopee</h2></div><Link href="/admin/analytics">Ver analytics <Icon name="arrow" size={15}/></Link></div><ClicksChart data={stats.points}/></section><section className="admin-card-v5 dashboard-actions-v5"><div className="admin-card-head-v5"><div><small>ATALHOS</small><h2>Controle do site</h2></div></div><div><Link href="/admin/editor"><Icon name="layout"/><span><strong>Editor da página</strong><small>Ordem, textos e seções</small></span><Icon name="arrow"/></Link><Link href="/admin/aparencia"><Icon name="palette"/><span><strong>Aparência</strong><small>Cores, cartões e layout</small></span><Icon name="arrow"/></Link><Link href="/admin/banners"><Icon name="banner"/><span><strong>Banners</strong><small>Campanhas e destaques</small></span><Icon name="arrow"/></Link><Link href="/admin/navegacao"><Icon name="navigation"/><span><strong>Menus e links</strong><small>Cabeçalho, mobile e rodapé</small></span><Icon name="arrow"/></Link></div></section></div><div className="dashboard-v5-grid lower"><section className="admin-card-v5"><div className="admin-card-head-v5"><div><small>DESEMPENHO</small><h2>Produtos mais clicados</h2></div><Link href="/admin/produtos">Ver catálogo</Link></div><div className="ranking-v5">{products.slice(0,7).map((p,i)=><div key={p.id}><b>{i+1}</b>{p.image_url?<img src={p.image_url} alt=""/>:<span/>}<div><strong>{p.name}</strong><small>{p.product_code?`Código ${p.product_code} • `:""}{p.categories?.name}</small></div><em>{p.click_count}</em></div>)}</div></section><section className="admin-card-v5"><div className="admin-card-head-v5"><div><small>ATENÇÃO</small><h2>Itens para revisar</h2></div><span>{problems.length}</span></div><div className="review-list-v5">{problems.slice(0,7).map((p)=><Link href="/admin/produtos" key={p.id}><span className={!p.image_url?"warn":"ok"}><Icon name={!p.image_url?"image":"check"}/></span><div><strong>{p.name}</strong><small>{!p.image_url?"Sem imagem":!p.product_code?"Sem código para vídeo":"Revisar cadastro"}</small></div><Icon name="arrow"/></Link>)}</div>{!problems.length?<div className="dashboard-all-good-v5"><Icon name="check"/><strong>Cadastros completos</strong></div>:null}</section><section className="admin-card-v5"><div className="admin-card-head-v5"><div><small>PESQUISAS</small><h2>O que estão procurando</h2></div><Link href="/admin/analytics">Detalhes</Link></div><div className="query-list-v5">{stats.topQueries.map(([query,count])=><div key={query}><strong>{query}</strong><span>{count} busca(s)</span></div>)}</div>{!stats.topQueries.length?<div className="empty-v5"><p>Ainda não há pesquisas registradas.</p></div>:null}</section></div></>}

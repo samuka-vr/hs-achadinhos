@@ -1,6 +1,6 @@
 import type { ReactNode, SVGProps } from "react";
 
-type IconName = "home" | "products" | "categories" | "settings" | "chart" | "click" | "search" | "menu" | "close" | "arrow" | "external" | "logout" | "plus" | "instagram" | "whatsapp" | "tiktok" | "youtube" | "facebook" | "telegram" | "mail" | "sparkles" | "tag" | "image" | "check";
+export type IconName = "home" | "products" | "categories" | "settings" | "chart" | "click" | "search" | "menu" | "close" | "arrow" | "external" | "logout" | "plus" | "instagram" | "whatsapp" | "tiktok" | "youtube" | "facebook" | "telegram" | "mail" | "sparkles" | "tag" | "image" | "check" | "banner" | "layout" | "palette" | "navigation" | "media" | "eye" | "edit" | "trash" | "copy" | "up" | "down" | "shield" | "link" | "monitor" | "mobile" | "text" | "filter" | "calendar" | "code" | "save" | "more";
 
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></>,
@@ -27,6 +27,27 @@ const paths: Record<IconName, ReactNode> = {
   tag: <><path d="M20 13 13 20l-9-9V4h7z"/><circle cx="8.5" cy="8.5" r="1"/></>,
   image: <><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 15-5-5L5 20"/></>,
   check: <><path d="m5 12 4 4L19 6"/></>,
+  banner: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h6M7 13h10"/></>,
+  layout: <><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/></>,
+  palette: <><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h5a4 4 0 0 0 4-4c0-3.3-4-6-9-6Z"/><circle cx="7.5" cy="9" r=".8"/><circle cx="10" cy="6.5" r=".8"/><circle cx="14" cy="6.5" r=".8"/></>,
+  navigation: <><path d="M4 6h16M4 12h10M4 18h7"/><path d="m18 15 3 3-3 3"/></>,
+  media: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 16 4-4 3 3 2-2 4 4"/><circle cx="8" cy="9" r="1.5"/></>,
+  eye: <><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></>,
+  edit: <><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10Z"/><path d="m13.5 6.5 3.5 3.5"/></>,
+  trash: <><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></>,
+  copy: <><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></>,
+  up: <><path d="m6 15 6-6 6 6"/></>,
+  down: <><path d="m6 9 6 6 6-6"/></>,
+  shield: <><path d="M12 3 4 6v5c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6Z"/><path d="m9 12 2 2 4-4"/></>,
+  link: <><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></>,
+  monitor: <><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></>,
+  mobile: <><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></>,
+  text: <><path d="M4 6V3h16v3M12 3v18M8 21h8"/></>,
+  filter: <><path d="M4 5h16M7 12h10M10 19h4"/></>,
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></>,
+  code: <><path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></>,
+  save: <><path d="M5 3h12l2 2v16H5Z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></>,
+  more: <><circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/></>,
 };
 
 export default function Icon({ name, size = 20, ...props }: SVGProps<SVGSVGElement> & { name: IconName; size?: number }) {
