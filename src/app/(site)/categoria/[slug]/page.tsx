@@ -26,7 +26,7 @@ export default async function CategoryPage({ params }: PageProps) {
   return <main className="page"><div className="container">
     <section className="category-hero-pro">
       <div className="category-hero-icon">{category.image_url ? <img src={category.image_url} alt={category.name} /> : <span>{category.icon || "✦"}</span>}</div>
-      <div><span className="section-eyebrow">Categoria</span><h1>{category.name}</h1><p>{products.length} produto(s) selecionados para você explorar.</p></div>
+      <div><span className="section-eyebrow">Categoria</span><h1>{category.name}</h1><p>{products.length} produto(s) nesta categoria.</p></div>
       <Icon name="categories" size={48} className="category-hero-watermark" />
     </section>
     <section className="section"><div className="catalog-result-line"><Icon name="products" size={17} /><strong>{products.length}</strong> produto(s) nesta categoria</div><ProductGrid products={products} /></section>

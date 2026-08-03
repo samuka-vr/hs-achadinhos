@@ -15,64 +15,50 @@ function shuffle<T>(items: T[]) {
   return result;
 }
 
-export default function ProductCoverflow({ products }: { products: Product[] }) {
-  const base = useMemo(() => products.filter((item) => item.image_url).slice(0, 12), [products]);
-  const [items, setItems] = useState(base);
+export default function ProductCoverflow({ products, speed = 4200 }: { products: Product[]; speed?: number }) {
+  const available = useMemo(() => products.filter((item) => item.image_url).slice(0, 14), [products]);
+  const [items, setItems] = useState<Product[]>(available);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  useEffect(() => { setItems(shuffle(base)); setActive(0); }, [base]);
+  useEffect(() => { setItems(shuffle(available)); setActive(0); }, [available]);
   useEffect(() => {
     if (paused || items.length < 2) return;
-    const timer = window.setInterval(() => setActive((current) => (current + 1) % items.length), 4200);
+    const timer = window.setInterval(() => setActive((current) => (current + 1) % items.length), Math.max(2500, speed));
     return () => window.clearInterval(timer);
-  }, [items.length, paused]);
+  }, [items.length, paused, speed]);
 
   if (!items.length) return null;
-
-  function relative(index: number) {
-    let distance = index - active;
-    const half = items.length / 2;
-    if (distance > half) distance -= items.length;
-    if (distance < -half) distance += items.length;
-    return distance;
-  }
+  const current = items[active];
+  const previous = items[(active - 1 + items.length) % items.length];
+  const next = items[(active + 1) % items.length];
 
   return (
-    <div className="coverflow" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-      <div className="coverflow-stage">
-        {items.map((product, index) => {
-          const distance = relative(index);
-          const hidden = Math.abs(distance) > 2;
-          return <article
-            key={product.id}
-            className={`coverflow-card ${distance === 0 ? "is-active" : ""}`}
-            style={{
-              transform: `translateX(${distance * 61}%) scale(${1 - Math.min(Math.abs(distance), 2) * .14}) rotateY(${distance * -14}deg)`,
-              opacity: hidden ? 0 : Math.max(.28, 1 - Math.abs(distance) * .25),
-              zIndex: 10 - Math.abs(distance),
-              pointerEvents: hidden ? "none" : "auto",
-            }}
-            onClick={() => distance !== 0 && setActive(index)}
-          >
-            <Link href={distance === 0 ? `/produto/${product.slug}` : "#"} onClick={(event) => distance !== 0 && event.preventDefault()}>
-              <div className="coverflow-image-wrap">
-                <img src={product.image_url || ""} alt={product.name} />
-                {product.badge ? <span className="coverflow-badge">{product.badge}</span> : null}
-              </div>
-              <div className="coverflow-content">
-                <small>{product.categories?.name || "Achadinho"}</small>
-                <h3>{product.name}</h3>
-                <div><strong>{formatPrice(product.current_price) || "Confira o preço"}</strong><span><Icon name="arrow" size={18} /></span></div>
-              </div>
-            </Link>
-          </article>;
-        })}
-      </div>
-      <div className="coverflow-controls">
-        <button type="button" onClick={() => setActive((active - 1 + items.length) % items.length)} aria-label="Produto anterior">‹</button>
-        <div className="coverflow-dots">{items.map((item, index) => <button key={item.id} type="button" className={active === index ? "active" : ""} onClick={() => setActive(index)} aria-label={`Abrir produto ${index + 1}`} />)}</div>
-        <button type="button" onClick={() => setActive((active + 1) % items.length)} aria-label="Próximo produto">›</button>
+    <div className="product-slider" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+      <button type="button" className="slider-side-card slider-side-left" onClick={() => setActive((active - 1 + items.length) % items.length)} aria-label="Produto anterior">
+        <img src={previous.image_url || ""} alt="" />
+      </button>
+
+      <article className="slider-main-card">
+        <Link href={`/produto/${current.slug}`}>
+          <div className="slider-main-media">
+            <img src={current.image_url || ""} alt={current.name} />
+            {current.badge ? <span>{current.badge}</span> : null}
+          </div>
+          <div className="slider-main-copy">
+            <small>{current.categories?.name || "Achadinho"}</small>
+            <h3>{current.name}</h3>
+            <div><strong>{formatPrice(current.current_price) || "Ver preço"}</strong><b>Ver produto <Icon name="arrow" size={17} /></b></div>
+          </div>
+        </Link>
+      </article>
+
+      <button type="button" className="slider-side-card slider-side-right" onClick={() => setActive((active + 1) % items.length)} aria-label="Próximo produto">
+        <img src={next.image_url || ""} alt="" />
+      </button>
+
+      <div className="slider-dots">
+        {items.map((item, index) => <button key={item.id} type="button" className={index === active ? "active" : ""} onClick={() => setActive(index)} aria-label={`Abrir produto ${index + 1}`} />)}
       </div>
     </div>
   );

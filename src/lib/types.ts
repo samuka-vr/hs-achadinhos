@@ -10,6 +10,15 @@ export type Category = {
   updated_at: string;
 };
 
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  image_url: string;
+  sort_order: number;
+  is_cover: boolean;
+  created_at: string;
+};
+
 export type Product = {
   id: string;
   category_id: string;
@@ -28,10 +37,12 @@ export type Product = {
   created_at: string;
   updated_at: string;
   categories?: Pick<Category, "id" | "name" | "slug"> | null;
+  product_images?: ProductImage[];
 };
 
 export type SiteSettings = {
   site_name: string;
+  header_tagline: string;
   logo_url: string;
   favicon_url: string;
   hero_eyebrow: string;
@@ -56,6 +67,11 @@ export type SiteSettings = {
   telegram: string;
   email: string;
   products_per_page: number;
+  show_categories: boolean;
+  show_trending: boolean;
+  show_newest: boolean;
+  show_catalog: boolean;
+  carousel_speed: number;
 };
 
 export type ProductClick = {

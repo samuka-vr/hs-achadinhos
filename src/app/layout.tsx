@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const icon = settings.favicon_url || settings.logo_url || "/brand/hs-logo.png";
   return {
     title: { default: settings.site_name, template: `%s | ${settings.site_name}` },
-    description: settings.hero_subtitle || "Curadoria de achadinhos e ofertas para encontrar produtos na Shopee.",
+    description: settings.hero_subtitle || "Produtos organizados por categoria com links diretos para a Shopee.",
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
     icons: { icon, apple: icon },
   };

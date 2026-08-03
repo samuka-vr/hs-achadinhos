@@ -23,10 +23,10 @@ export default function MobileMenu({ categories, settings }: { categories: Categ
             <Link href="/" onClick={() => setOpen(false)}><Icon name="home" /> Início</Link>
             <Link href="/#categorias" onClick={() => setOpen(false)}><Icon name="categories" /> Categorias</Link>
             <Link href="/#produtos" onClick={() => setOpen(false)}><Icon name="products" /> Todos os produtos</Link>
-            <Link href="/sobre" onClick={() => setOpen(false)}><Icon name="sparkles" /> Sobre nós</Link>
+            <Link href="/sobre" onClick={() => setOpen(false)}><Icon name="sparkles" /> Sobre</Link>
           </nav>
           <div className="mobile-drawer-section">
-            <small>Explore por categoria</small>
+            <small>Categorias</small>
             {categories.slice(0, 10).map((category) => <Link href={`/categoria/${category.slug}`} key={category.id} onClick={() => setOpen(false)}><span>{category.icon || "•"}</span>{category.name}</Link>)}
           </div>
           <div className="mobile-drawer-socials">

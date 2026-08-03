@@ -5,25 +5,17 @@ import Icon from "./Icon";
 export default function Footer({ settings, categories }: { settings: SiteSettings; categories: Category[] }) {
   const year = new Date().getFullYear();
   const socials = [
-    ["instagram", settings.instagram, "Instagram"], ["whatsapp", settings.whatsapp, "WhatsApp"], ["tiktok", settings.tiktok, "TikTok"], ["youtube", settings.youtube, "YouTube"], ["facebook", settings.facebook, "Facebook"], ["telegram", settings.telegram, "Telegram"],
+    ["instagram", settings.instagram], ["whatsapp", settings.whatsapp], ["tiktok", settings.tiktok], ["youtube", settings.youtube], ["facebook", settings.facebook], ["telegram", settings.telegram],
   ] as const;
   return (
-    <footer className="site-footer">
-      <div className="footer-glow" />
-      <div className="container footer-content">
-        <div className="footer-grid">
-          <div className="footer-brand-column">
-            <Link className="brand footer-brand" href="/"><img className="brand-logo" src={settings.logo_url || "/brand/hs-logo.png"} alt="" /><span className="brand-copy"><strong>{settings.site_name}</strong><small>Achadinhos selecionados</small></span></Link>
-            <p>{settings.footer_description}</p>
-            <div className="footer-socials">{socials.map(([icon, href, label]) => href ? <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={label}><Icon name={icon} /></a> : null)}</div>
-          </div>
-          <div><h3>Explore</h3><div className="footer-links"><Link href="/">Início</Link><Link href="/#produtos">Todos os produtos</Link><Link href="/#novidades">Novidades</Link><Link href="/sobre">Sobre a H&S</Link></div></div>
-          <div><h3>Categorias</h3><div className="footer-links">{categories.slice(0, 6).map((category) => <Link key={category.id} href={`/categoria/${category.slug}`}>{category.name}</Link>)}</div></div>
-          <div><h3>Informações</h3><div className="footer-links"><Link href="/privacidade">Política de privacidade</Link>{settings.email ? <a href={`mailto:${settings.email}`}><Icon name="mail" size={16} />{settings.email}</a> : null}<Link href="/admin/login">Área administrativa</Link></div></div>
-        </div>
-        <div className="footer-disclosure"><Icon name="check" /><p>Ao clicar em uma oferta, você será direcionado para a Shopee. Podemos receber comissão por compras realizadas através dos links, sem custo adicional para você.</p></div>
-        <div className="footer-bottom"><span>© {year} {settings.site_name}. Todos os direitos reservados.</span><span>Feito para encontrar boas escolhas com mais facilidade.</span></div>
+    <footer className="site-footer clean-footer">
+      <div className="container clean-footer-grid">
+        <div className="clean-footer-brand"><img src={settings.logo_url || "/brand/hs-logo.png"} alt="" /><div><strong>{settings.site_name}</strong><p>{settings.footer_description}</p></div></div>
+        <div><strong>Navegação</strong><Link href="/">Início</Link><Link href="/#categorias">Categorias</Link><Link href="/#produtos">Produtos</Link><Link href="/sobre">Sobre</Link></div>
+        <div><strong>Categorias</strong>{categories.slice(0, 5).map((category) => <Link key={category.id} href={`/categoria/${category.slug}`}>{category.name}</Link>)}</div>
+        <div><strong>Contato</strong><div className="clean-socials">{socials.filter(([,url]) => url).map(([name,url]) => <a key={name} href={url} target="_blank" rel="noreferrer" aria-label={name}><Icon name={name} /></a>)}</div>{settings.email ? <a href={`mailto:${settings.email}`}>{settings.email}</a> : <small>Use os canais acima para falar com a gente.</small>}</div>
       </div>
+      <div className="container clean-footer-bottom"><span>© {year} {settings.site_name}</span><span>Alguns links podem gerar comissão de afiliado, sem custo extra para você.</span><Link href="/privacidade">Privacidade</Link></div>
     </footer>
   );
 }

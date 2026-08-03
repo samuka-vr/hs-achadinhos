@@ -61,12 +61,12 @@ export default function SearchBox() {
         <button className="search-submit" type="submit">Buscar</button>
       </form>
       {open && term.trim().length >= 2 ? <div className="suggestions" role="listbox">
-        <div className="suggestions-title"><span>Sugestões para você</span><small>{results.length} resultado(s)</small></div>
+        <div className="suggestions-title"><span>Resultados</span><small>{results.length} resultado(s)</small></div>
         {results.length ? results.map((item) => <Link className="suggestion" key={`${item.type}-${item.id}`} href={item.type === "product" ? `/produto/${item.slug}` : `/categoria/${item.slug}`} onClick={() => setOpen(false)}>
           {item.image_url ? <img className="suggestion-thumb" src={item.image_url} alt="" /> : <div className="suggestion-thumb suggestion-placeholder"><Icon name={item.type === "product" ? "products" : "categories"} /></div>}
           <span className="suggestion-meta"><strong>{item.name}</strong><small>{item.type === "product" ? formatPrice(item.current_price) ?? "Ver produto" : "Ver categoria"}</small></span>
           <Icon name="arrow" size={18} />
-        </Link>) : <div className="suggestion-empty"><Icon name="search" /><strong>Nenhum resultado</strong><small>Tente buscar com outra palavra.</small></div>}
+        </Link>) : <div className="suggestion-empty"><Icon name="search" /><strong>Nenhum resultado</strong><small>Tente outra palavra.</small></div>}
       </div> : null}
     </div>
   );

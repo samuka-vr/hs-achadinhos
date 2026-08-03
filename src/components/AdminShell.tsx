@@ -44,21 +44,20 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   async function logout() { const supabase = getBrowserSupabase(); await supabase?.auth.signOut(); router.replace("/admin/login"); }
   function activeRoute(href: string) { return href === "/admin" ? pathname === href : pathname.startsWith(href); }
 
-  if (!ready) return <div className="admin-loading"><div className="admin-loading-logo"><img src="/brand/hs-logo.png" alt="" /></div><strong>Preparando seu painel...</strong></div>;
+  if (!ready) return <div className="admin-loading"><img src="/brand/hs-logo.png" alt="" /><strong>Carregando painel...</strong></div>;
   if (error) return <main className="page"><div className="container"><div className="error">{error}</div></div></main>;
 
   return (
-    <div className="admin-shell-pro">
-      <aside className="admin-sidebar">
-        <Link className="admin-brand" href="/admin"><img src={brand.logo} alt="" /><span><strong>{brand.name}</strong><small>Painel de gestão</small></span></Link>
-        <div className="admin-sidebar-label">MENU PRINCIPAL</div>
-        <nav className="admin-sidebar-nav">{navItems.map((item) => <Link className={activeRoute(item.href) ? "active" : ""} href={item.href} key={item.href}><Icon name={item.icon} /><span>{item.label}</span>{activeRoute(item.href) ? <i /> : null}</Link>)}</nav>
+    <div className="admin-shell-pro clean-admin-shell">
+      <aside className="admin-sidebar clean-admin-sidebar">
+        <Link className="admin-brand" href="/admin"><img src={brand.logo} alt="" /><span><strong>{brand.name}</strong><small>Administração</small></span></Link>
+        <nav className="admin-sidebar-nav">{navItems.map((item) => <Link className={activeRoute(item.href) ? "active" : ""} href={item.href} key={item.href}><Icon name={item.icon} /><span>{item.label}</span></Link>)}</nav>
         <div className="admin-sidebar-spacer" />
-        <div className="admin-sidebar-card"><Icon name="sparkles" /><strong>Seu catálogo está online</strong><p>Visualize as mudanças publicadas em uma nova aba.</p><Link href="/" target="_blank">Abrir site <Icon name="external" size={16} /></Link></div>
-        <button className="admin-logout" onClick={() => void logout()}><Icon name="logout" /><span>Sair da conta</span></button>
+        <Link className="clean-open-site" href="/" target="_blank"><Icon name="external" /><span>Ver site</span></Link>
+        <button className="admin-logout" onClick={() => void logout()}><Icon name="logout" /><span>Sair</span></button>
       </aside>
       <div className="admin-workspace">
-        <header className="admin-mobile-header"><Link href="/admin" className="admin-mobile-brand"><img src={brand.logo} alt="" /><strong>Painel H&S</strong></Link><Link className="admin-view-site" href="/" target="_blank">Ver site <Icon name="external" size={16} /></Link></header>
+        <header className="admin-mobile-header"><Link href="/admin" className="admin-mobile-brand"><img src={brand.logo} alt="" /><strong>{brand.name}</strong></Link><Link className="admin-view-site" href="/" target="_blank">Ver site <Icon name="external" size={15} /></Link></header>
         <main className="admin-main-pro">{children}</main>
       </div>
       <nav className="admin-mobile-nav">{navItems.map((item) => <Link className={activeRoute(item.href) ? "active" : ""} href={item.href} key={item.href}><Icon name={item.icon} /><span>{item.label.split(" ")[0]}</span></Link>)}</nav>
