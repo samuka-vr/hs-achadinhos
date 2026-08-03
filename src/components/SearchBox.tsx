@@ -57,7 +57,7 @@ export default function SearchBox() {
     <div className="search-wrap" ref={boxRef}>
       <form role="search" onSubmit={submit}>
         <Icon name="search" className="search-leading-icon" size={19} />
-        <input className="search-input" value={term} onChange={(event) => { setTerm(event.target.value); setOpen(true); }} onFocus={() => { void loadCatalog(); setOpen(true); }} placeholder="O que você está procurando?" aria-label="Buscar produtos" autoComplete="off" />
+        <input className="search-input" value={term} onChange={(event) => { setTerm(event.target.value); setOpen(true); }} onFocus={() => { void loadCatalog(); setOpen(true); }} placeholder="Digite o nome do produto que você viu" aria-label="Buscar produtos" autoComplete="off" />
         <button className="search-submit" type="submit">Buscar</button>
       </form>
       {open && term.trim().length >= 2 ? <div className="suggestions" role="listbox">

@@ -205,7 +205,7 @@ export default function ProductsAdmin() {
   return (
     <>
       <div className="admin-page-heading clean-admin-heading">
-        <div><span className="admin-eyebrow">CATÁLOGO</span><h1>Produtos</h1><p>Cadastre links, imagens, preços e destaques.</p></div>
+        <div><span className="admin-eyebrow">CATÁLOGO</span><h1>Produtos</h1><p>Cadastre o link, as fotos e escolha quais produtos aparecem primeiro para quem veio da bio.</p></div>
         <button className="admin-button" onClick={newProduct}><Icon name="plus" />Adicionar produto</button>
       </div>
       {error ? <div className="error admin-alert">{error}</div> : null}
@@ -214,7 +214,7 @@ export default function ProductsAdmin() {
       <div className="admin-mini-stats clean-mini-stats">
         <div><strong>{products.length}</strong><small>Produtos</small></div>
         <div><strong>{products.filter((item) => item.is_active).length}</strong><small>Ativos</small></div>
-        <div><strong>{products.filter((item) => item.is_featured).length}</strong><small>Destaques</small></div>
+        <div><strong>{products.filter((item) => item.is_featured).length}</strong><small>Fixados na bio</small></div>
         <div><strong>{products.reduce((sum, item) => sum + Number(item.click_count || 0), 0)}</strong><small>Cliques</small></div>
       </div>
 
@@ -241,7 +241,7 @@ export default function ProductsAdmin() {
                 <label className="admin-label">Tags<input className="admin-input" value={form.tags} onChange={(e) => update("tags", e.target.value)} placeholder="casa, útil, promoção" /></label>
                 <label className="admin-label full">Descrição curta<textarea className="admin-input admin-textarea" value={form.short_description} onChange={(e) => update("short_description", e.target.value)} placeholder="Uma descrição direta do produto." /></label>
               </div>
-              <div className="admin-check-grid"><label><input type="checkbox" checked={form.is_active} onChange={(e) => update("is_active", e.target.checked)} /><span><strong>Ativo</strong><small>Aparece no site</small></span></label><label><input type="checkbox" checked={form.is_featured} onChange={(e) => update("is_featured", e.target.checked)} /><span><strong>Destaque</strong><small>Entra primeiro no carrossel</small></span></label></div>
+              <div className="admin-check-grid"><label><input type="checkbox" checked={form.is_active} onChange={(e) => update("is_active", e.target.checked)} /><span><strong>Ativo</strong><small>Aparece no site</small></span></label><label><input type="checkbox" checked={form.is_featured} onChange={(e) => update("is_featured", e.target.checked)} /><span><strong>Produto do vídeo</strong><small>Fica no começo da seção “Link da bio”</small></span></label></div>
             </div>
           </div>
 
@@ -265,7 +265,7 @@ export default function ProductsAdmin() {
         </div>
         <div className="admin-product-list clean-product-list">{visible.map((product) => <article key={product.id} className="admin-product-row">
           {product.image_url ? <img src={product.image_url} alt="" /> : <div className="admin-product-placeholder"><Icon name="image" /></div>}
-          <div className="admin-product-main"><div className="admin-product-title-line"><strong>{product.name}</strong>{product.is_featured ? <span className="admin-pill featured">Destaque</span> : null}<span className={`admin-pill ${product.is_active ? "active" : "inactive"}`}>{product.is_active ? "Ativo" : "Inativo"}</span></div><small>{product.categories?.name || "Sem categoria"}</small><div className="admin-product-meta"><b>{formatPrice(product.current_price) || "Sem preço"}</b><span>{product.click_count} cliques</span><span>{product.product_images?.length || (product.image_url ? 1 : 0)} imagem(ns)</span></div></div>
+          <div className="admin-product-main"><div className="admin-product-title-line"><strong>{product.name}</strong>{product.is_featured ? <span className="admin-pill featured">Link da bio</span> : null}<span className={`admin-pill ${product.is_active ? "active" : "inactive"}`}>{product.is_active ? "Ativo" : "Inativo"}</span></div><small>{product.categories?.name || "Sem categoria"}</small><div className="admin-product-meta"><b>{formatPrice(product.current_price) || "Sem preço"}</b><span>{product.click_count} cliques</span><span>{product.product_images?.length || (product.image_url ? 1 : 0)} imagem(ns)</span></div></div>
           <div className="admin-row-actions"><button onClick={() => edit(product)}>Editar</button><button onClick={() => void duplicate(product)}>Duplicar</button><button onClick={() => void toggle(product)}>{product.is_active ? "Desativar" : "Ativar"}</button><button className="danger" onClick={() => void remove(product)}>Excluir</button></div>
         </article>)}</div>
         {!visible.length ? <div className="empty"><Icon name="search" size={30} /><h3>Nenhum produto encontrado</h3><p>Tente outro filtro ou cadastre um produto.</p></div> : null}

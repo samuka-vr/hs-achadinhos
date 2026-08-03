@@ -17,9 +17,9 @@ export default function Header({ settings, categories }: { settings: SiteSetting
           <SearchBox />
           <div className="header-actions">
             <nav className="clean-desktop-nav" aria-label="Navegação principal">
+              <Link href="/#ultimos-links">Produtos dos vídeos</Link>
               <Link href="/#categorias">Categorias</Link>
-              <Link href="/#produtos">Produtos</Link>
-              <Link href="/sobre">Sobre</Link>
+              <Link href="/#produtos">Todos os produtos</Link>
             </nav>
             {settings.instagram ? <a className="header-icon-button desktop-action" href={settings.instagram} target="_blank" rel="noreferrer" aria-label="Instagram"><Icon name="instagram" /></a> : null}
             <MobileMenu categories={categories} settings={settings} />

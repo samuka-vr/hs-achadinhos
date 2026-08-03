@@ -885,3 +885,244 @@ body { background: var(--page); color: var(--ink); }
   .admin-stat-grid { grid-template-columns: 1fr 1fr; }
   .clean-settings-tabs { grid-template-columns: repeat(6, 78px); }
 }
+
+/* V4 — foco em link da bio e menu móvel corrigido */
+:root {
+  --brand: #d96f82;
+  --brand-soft: #fff2f4;
+  --brand-deep: #a84f60;
+  --page: #fbfaf9;
+  --surface-soft: #fff7f8;
+  --line: #ece7e8;
+  --muted: #706a6c;
+}
+
+/* O drawer usa altura real da tela e fica acima de qualquer barra do navegador/site. */
+.mobile-drawer-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: block !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100vh !important;
+  overflow: hidden !important;
+  background: rgba(20, 18, 19, .52) !important;
+  backdrop-filter: blur(4px);
+}
+.mobile-drawer {
+  position: fixed !important;
+  inset: 0 0 0 auto !important;
+  width: min(90vw, 390px) !important;
+  height: 100dvh !important;
+  min-height: 100vh !important;
+  max-height: 100dvh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  background: #fff !important;
+  box-shadow: -24px 0 60px rgba(20, 18, 19, .22) !important;
+  animation: drawerIn .2s ease-out;
+}
+@keyframes drawerIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.mobile-drawer-head {
+  flex: 0 0 auto;
+  min-height: 72px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.mobile-drawer-head .brand-compact { min-width: 0; }
+.mobile-drawer-head .brand-compact span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 850; }
+.mobile-drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
+  background: #fff;
+}
+.mobile-drawer-callout {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 11px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--brand) 22%, #fff);
+  border-radius: 16px;
+  background: var(--brand-soft);
+}
+.mobile-drawer-callout > span {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #fff;
+  background: var(--brand);
+}
+.mobile-drawer-callout > div { display: grid; gap: 3px; }
+.mobile-drawer-callout strong { font-size: .87rem; }
+.mobile-drawer-callout small { color: var(--muted); font-size: .72rem; line-height: 1.45; }
+.mobile-drawer-callout > a {
+  grid-column: 2;
+  width: fit-content;
+  color: var(--brand-deep);
+  font-size: .75rem;
+  font-weight: 850;
+}
+.mobile-drawer-links {
+  display: grid !important;
+  gap: 7px !important;
+  padding: 16px 0 !important;
+}
+.mobile-drawer-links a {
+  min-height: 48px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 13px !important;
+  border: 1px solid transparent;
+  border-radius: 13px !important;
+  color: #292527 !important;
+  background: #fff !important;
+  font-size: .88rem;
+  font-weight: 780 !important;
+}
+.mobile-drawer-links a svg { flex: 0 0 auto; color: var(--brand); }
+.mobile-drawer-links a:active { border-color: var(--line); background: #faf8f8 !important; }
+.mobile-drawer-section { display: grid !important; gap: 10px !important; padding: 16px 0 !important; }
+.mobile-drawer-section > small { color: var(--muted); font-size: .67rem; }
+.mobile-drawer-category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mobile-drawer-category-grid a {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.mobile-drawer-category-grid a > span { width: 28px; height: 28px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; background: var(--brand-soft); }
+.mobile-drawer-category-grid b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .72rem; }
+.mobile-drawer-socials { padding-top: 16px !important; }
+.mobile-drawer-socials a { background: #f7f5f5 !important; }
+
+/* Entrada da página: deixa claro que este é o link da bio. */
+.bio-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1.28fr) minmax(280px, .72fr);
+  gap: 18px;
+  align-items: stretch;
+  padding: 24px 0 10px;
+}
+.bio-entry-copy,
+.bio-entry-help {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+}
+.bio-entry-copy { padding: clamp(24px, 4vw, 46px); }
+.bio-entry-badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 16px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  color: var(--brand-deep);
+  background: var(--brand-soft);
+  font-size: .73rem;
+  font-weight: 850;
+}
+.bio-entry-copy h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(2.1rem, 5vw, 4.25rem);
+  line-height: .98;
+  letter-spacing: -.06em;
+}
+.bio-entry-copy > p {
+  max-width: 660px;
+  margin: 17px 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+.bio-entry-search { max-width: 620px; margin-top: 24px; }
+.bio-entry-search .search-wrap { max-width: none; }
+.bio-entry-search .search-wrap form {
+  min-height: 54px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #f8f7f7;
+  box-shadow: none;
+}
+.bio-entry-search .search-input { min-height: 52px; }
+.bio-entry-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.bio-entry-help { padding: 24px; }
+.bio-entry-help > strong { display: block; margin-bottom: 15px; font-size: 1.02rem; }
+.bio-entry-help ol { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.bio-entry-help li { display: grid; grid-template-columns: 34px 1fr; gap: 11px; align-items: start; }
+.bio-entry-help li > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--brand-deep);
+  background: var(--brand-soft);
+  font-size: .78rem;
+  font-weight: 900;
+}
+.bio-entry-help p { display: grid; gap: 3px; margin: 0; }
+.bio-entry-help b { font-size: .82rem; }
+.bio-entry-help small { color: var(--muted); font-size: .72rem; line-height: 1.45; }
+.bio-links-section { scroll-margin-top: 105px; margin-top: 20px; }
+.section-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--brand);
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+/* Carrossel mais leve e direto. */
+.bio-links-section.home-slider-section { padding: 22px; background: #fff; }
+.bio-links-section .product-slider { min-height: 390px; }
+.bio-links-section .slider-main-card { box-shadow: 0 14px 34px rgba(35, 28, 30, .10); }
+
+/* Garante que a antiga navegação inferior nunca reapareça em builds anteriores misturados. */
+.mobile-bottom-nav,
+.header-nav-row { display: none !important; visibility: hidden !important; pointer-events: none !important; }
+
+@media (max-width: 860px) {
+  .bio-entry { grid-template-columns: 1fr; }
+  .bio-entry-help { padding: 20px; }
+  .bio-entry-help ol { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .bio-entry-help li { grid-template-columns: 1fr; padding: 12px; border: 1px solid var(--line); border-radius: 13px; }
+}
+
+@media (max-width: 760px) {
+  .home-page { padding-top: 8px; }
+  .bio-entry { gap: 10px; padding-top: 8px; }
+  .bio-entry-copy,
+  .bio-entry-help { border-radius: 18px; }
+  .bio-entry-copy { padding: 22px 18px; }
+  .bio-entry-copy h1 { font-size: clamp(2rem, 11vw, 3rem); }
+  .bio-entry-copy > p { margin-top: 13px; font-size: .89rem; line-height: 1.55; }
+  .bio-entry-search { margin-top: 18px; }
+  .bio-entry-search .search-wrap form { min-height: 50px; }
+  .bio-entry-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .bio-entry-actions .button { width: 100%; min-width: 0; padding-inline: 10px; font-size: .78rem; }
+  .bio-entry-help { padding: 16px; }
+  .bio-entry-help ol { grid-template-columns: 1fr; }
+  .bio-entry-help li { grid-template-columns: 34px 1fr; padding: 0; border: 0; }
+  .bio-links-section.home-slider-section { margin-top: 12px; padding: 16px 10px; }
+  .bio-links-section .simple-section-head { padding-inline: 4px; }
+  .bio-links-section .product-slider { min-height: 410px; }
+  .mobile-drawer { width: min(92vw, 390px) !important; }
+}
