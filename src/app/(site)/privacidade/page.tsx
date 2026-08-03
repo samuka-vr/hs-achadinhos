@@ -1,0 +1,4 @@
+export const metadata = { title: "Política de Privacidade" };
+export default function PrivacyPage() {
+  return <main className="page"><div className="container"><article className="panel" style={{ maxWidth: 820, margin: "0 auto" }}><h1>Política de Privacidade</h1><p><strong>Última atualização:</strong> 3 de agosto de 2026.</p><h2>Dados coletados</h2><p>O site registra cliques em produtos, data e hora, página de origem e informações básicas do navegador. Não armazenamos o endereço IP completo nem dados de pagamento.</p><h2>Finalidade</h2><p>Esses dados são usados para medir o interesse nas ofertas, melhorar a organização do catálogo e identificar produtos e categorias mais acessados.</p><h2>Links externos</h2><p>Ao acessar a Shopee, passam a valer os termos e políticas da própria plataforma e do vendedor escolhido.</p><h2>Contato</h2><p>Use os canais exibidos no rodapé para dúvidas ou solicitações relacionadas à privacidade.</p></article></div></main>;
+}
