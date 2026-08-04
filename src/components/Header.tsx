@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Category, NavigationItem, SiteSettings } from "@/lib/types";
-import SearchBox from "./SearchBox";
 import Icon from "./Icon";
 import MobileMenu from "./MobileMenu";
 
@@ -23,8 +22,6 @@ export default function Header({ settings, categories, navigation }: { settings:
           <span className="hs-brand-name"><strong>{settings.site_name}</strong><small>{settings.header_tagline || "Achou no vídeo. Encontrou aqui."}</small></span>
         </Link>
 
-        {settings.show_header_search ? <div className="hs-header-search"><SearchBox /></div> : null}
-
         <nav className="hs-desktop-nav" aria-label="Navegação principal">
           {headerItems.length ? headerItems.map((item) => (
             <Link href={item.url} key={item.id} target={item.open_new_tab ? "_blank" : undefined}>{item.label}</Link>
@@ -36,7 +33,7 @@ export default function Header({ settings, categories, navigation }: { settings:
         </nav>
 
         <div className="hs-header-actions">
-          <Link className="hs-header-search-button" href="/busca" aria-label="Buscar produtos"><Icon name="search" /></Link>
+          {settings.show_header_search ? <Link className="hs-header-search-button" href="/busca" aria-label="Buscar produtos"><Icon name="search" /></Link> : null}
           <MobileMenu categories={categories} settings={settings} navigation={navigation} />
         </div>
       </div>

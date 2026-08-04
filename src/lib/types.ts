@@ -97,6 +97,7 @@ export type SiteSettings = {
   custom_css: string;
   whatsapp: string;
   instagram: string;
+  shopee_showcase: string;
   tiktok: string;
   youtube: string;
   facebook: string;

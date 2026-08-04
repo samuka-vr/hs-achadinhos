@@ -47,6 +47,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   custom_css: "",
   whatsapp: "",
   instagram: "",
+  shopee_showcase: "",
   tiktok: "",
   youtube: "",
   facebook: "",

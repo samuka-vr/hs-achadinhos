@@ -5,10 +5,11 @@ import Icon from "@/components/Icon";
 import ProductExplorer from "@/components/ProductExplorer";
 import ProductGrid from "@/components/ProductGrid";
 import ProductRail from "@/components/ProductRail";
+import HeroProductCarousel from "@/components/HeroProductCarousel";
 import SearchBox from "@/components/SearchBox";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { Banner, Category, HomeSection, Product } from "@/lib/types";
-import { discountPercentage, formatPrice, parseSettings, safeNumber } from "@/lib/utils";
+import { parseSettings, safeNumber } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -20,25 +21,6 @@ const fallbackSections: HomeSection[] = [
   { id: "trending", section_key: "trending", section_type: "trending", title: "Os mais procurados", subtitle: "Produtos que mais receberam acessos.", eyebrow: "EM ALTA", is_enabled: true, sort_order: 50, settings: { limit: 8, columns: 4 }, created_at: "", updated_at: "" },
   { id: "catalog", section_key: "catalog", section_type: "catalog", title: "Todos os produtos", subtitle: "Busque, filtre e encontre seu próximo achadinho.", eyebrow: "CATÁLOGO", is_enabled: true, sort_order: 60, settings: { page_size: 24 }, created_at: "", updated_at: "" },
 ];
-
-function Spotlight({ product }: { product: Product | undefined }) {
-  if (!product) return <div className="hs-hero-brand-card"><span>H&S</span><strong>Achadinhos</strong><small>Novos produtos toda semana</small></div>;
-  const discount = discountPercentage(product.current_price, product.old_price);
-  return <article className="hs-spotlight-card">
-    <Link href={`/produto/${product.slug}`} className="hs-spotlight-image">
-      {product.image_url ? <img src={product.image_url} alt={product.name} /> : <div><Icon name="image" size={34} /></div>}
-      <span>Produto do vídeo</span>
-      {discount ? <b>-{discount}%</b> : null}
-    </Link>
-    <div className="hs-spotlight-copy">
-      <small>{product.categories?.name || "Achadinho"}</small>
-      <h2>{product.name}</h2>
-      <div><strong>{formatPrice(product.current_price) || "Ver preço"}</strong>{product.old_price ? <del>{formatPrice(product.old_price)}</del> : null}</div>
-      <p>{product.product_code ? `Procure pelo código ${product.product_code}.` : "Esse foi um dos últimos produtos publicados."}</p>
-      <a href={`/go/${product.id}`} target="_blank" rel="nofollow sponsored noopener">Ver oferta <Icon name="external" size={15} /></a>
-    </div>
-  </article>;
-}
 
 export default async function HomePage() {
   const supabase = getServerSupabase();
@@ -69,7 +51,7 @@ export default async function HomePage() {
     .sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned) || new Date(b.video_posted_at || b.created_at).getTime() - new Date(a.video_posted_at || a.created_at).getTime());
   const newest = [...products].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const trending = [...products].sort((a, b) => b.click_count - a.click_count);
-  const spotlight = videoProducts[0] || newest[0];
+  const heroProducts = [...videoProducts, ...newest.filter((item) => !videoProducts.some((video) => video.id === item.id))].slice(0, 6);
 
   function SectionHead({ section, id }: { section: HomeSection; id?: string }) {
     return <div className="hs-section-head" id={id}>
@@ -80,7 +62,7 @@ export default async function HomePage() {
 
   return <main className="hs-home"><div className="hs-container">
     {sections.filter((section) => section.is_enabled).sort((a, b) => a.sort_order - b.sort_order).map((section) => {
-      if (section.section_type === "hero") return <section className="hs-hero" key={section.id}>
+      if (section.section_type === "hero") return <section className={`hs-hero ${heroProducts.length ? "" : "is-empty"}`} key={section.id}>
         <div className="hs-hero-copy">
           <span className="hs-kicker"><Icon name="sparkles" size={14} />{section.eyebrow || "LINK DA BIO"}</span>
           <h1>{section.title || settings.hero_title}</h1>
@@ -88,7 +70,7 @@ export default async function HomePage() {
           {Boolean(section.settings.show_search ?? true) ? <SearchBox variant="hero" /> : null}
           <div className="hs-hero-chips"><a href="#produtos-dos-videos">Últimos vídeos</a><a href="#categorias">Categorias</a><a href="#produtos">Todos os produtos</a></div>
         </div>
-        <Spotlight product={spotlight} />
+        <HeroProductCarousel products={heroProducts} interval={settings.carousel_speed} />
       </section>;
 
       if (section.section_type === "banners") return banners.length ? <section className="hs-section hs-banner-section" key={section.id}><BannerCarousel banners={banners} autoplay={Boolean(section.settings.autoplay ?? true)} interval={safeNumber(section.settings.interval, 5000)} height={String(section.settings.height || "medium")} /></section> : null;
@@ -115,7 +97,7 @@ export default async function HomePage() {
         return trending.length ? <section className="hs-section" key={section.id}><SectionHead section={section} id="mais-acessados" /><ProductGrid products={trending.slice(0, limit)} columns={safeNumber(section.settings.columns, 4)} /></section> : null;
       }
 
-      if (section.section_type === "catalog") return <section className="hs-section hs-catalog" id="produtos" key={section.id}><SectionHead section={section} /><ProductExplorer products={products} categories={categories} pageSize={safeNumber(section.settings.page_size, settings.products_per_page || 24)} /></section>;
+      if (section.section_type === "catalog") return <section className="hs-section hs-catalog" id="produtos" key={section.id}><SectionHead section={section} /><ProductExplorer products={products} categories={categories} pageSize={safeNumber(section.settings.page_size, settings.products_per_page || 24)} showSearch={false} /></section>;
 
       if (section.section_type === "custom_text") return <section className={`hs-section hs-custom-block align-${String(section.settings.alignment || "left")}`} key={section.id}><SectionHead section={section} />{section.settings.body ? <div>{String(section.settings.body)}</div> : null}{section.settings.button_text ? <a className="hs-button" href={String(section.settings.button_url || "#produtos")}>{String(section.settings.button_text)}<Icon name="arrow" size={16} /></a> : null}</section>;
       return null;

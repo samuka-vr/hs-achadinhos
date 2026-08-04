@@ -1,6 +1,6 @@
 import type { ReactNode, SVGProps } from "react";
 
-export type IconName = "home" | "products" | "categories" | "settings" | "chart" | "click" | "search" | "menu" | "close" | "arrow" | "external" | "logout" | "plus" | "instagram" | "whatsapp" | "tiktok" | "youtube" | "facebook" | "telegram" | "mail" | "sparkles" | "tag" | "image" | "check" | "banner" | "layout" | "palette" | "navigation" | "media" | "eye" | "edit" | "trash" | "copy" | "up" | "down" | "shield" | "link" | "monitor" | "mobile" | "text" | "filter" | "calendar" | "code" | "save" | "more";
+export type IconName = "home" | "products" | "categories" | "settings" | "chart" | "click" | "search" | "menu" | "close" | "arrow" | "external" | "logout" | "plus" | "instagram" | "whatsapp" | "tiktok" | "youtube" | "facebook" | "telegram" | "mail" | "sparkles" | "tag" | "image" | "check" | "banner" | "layout" | "palette" | "navigation" | "media" | "eye" | "edit" | "trash" | "copy" | "up" | "down" | "shield" | "link" | "monitor" | "mobile" | "text" | "filter" | "calendar" | "code" | "save" | "more" | "store";
 
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></>,
@@ -48,6 +48,7 @@ const paths: Record<IconName, ReactNode> = {
   code: <><path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></>,
   save: <><path d="M5 3h12l2 2v16H5Z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></>,
   more: <><circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/></>,
+  store: <><path d="M4 9v11h16V9"/><path d="M3 9 5 4h14l2 5"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M9 20v-6h6v6"/></>,
 };
 
 export default function Icon({ name, size = 20, ...props }: SVGProps<SVGSVGElement> & { name: IconName; size?: number }) {
