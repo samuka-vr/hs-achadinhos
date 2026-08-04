@@ -1,10 +1,45 @@
 import Link from "next/link";
 import type { Category, NavigationItem, SiteSettings } from "@/lib/types";
 import SearchBox from "./SearchBox";
-import Icon, { type IconName } from "./Icon";
+import Icon from "./Icon";
 import MobileMenu from "./MobileMenu";
 
-export default function Header({settings,categories,navigation}:{settings:SiteSettings;categories:Category[];navigation:NavigationItem[]}){
- const headerItems=navigation.filter((item)=>item.location==="header"&&item.is_active).sort((a,b)=>a.sort_order-b.sort_order);
- return <>{settings.announcement_enabled&&settings.announcement_text?<div className="announcement-v5"><a href={settings.announcement_url||"#produtos"}>{settings.announcement_text}<Icon name="arrow" size={15}/></a></div>:null}<header className={`site-header-v5 style-${settings.header_style} ${settings.sticky_header?"sticky":""}`}><div className="container-v5 header-row-v5"><Link className="brand-v5" href="/"><img src={settings.logo_url||"/brand/hs-logo.png"} alt={`Logo ${settings.site_name}`}/><span><strong>{settings.site_name}</strong><small>{settings.header_tagline}</small></span></Link>{settings.show_header_search?<div className="header-search-v5"><SearchBox/></div>:null}<nav className="desktop-nav-v5">{headerItems.length?headerItems.map((item)=><Link href={item.url} key={item.id} target={item.open_new_tab?"_blank":undefined}><Icon name={(item.icon||"link") as IconName} size={15}/>{item.label}</Link>):<><Link href="/#produtos-dos-videos">Dos vídeos</Link><Link href="/#categorias">Categorias</Link><Link href="/#produtos">Produtos</Link></>}</nav><div className="header-actions-v5">{settings.instagram?<a href={settings.instagram} target="_blank" rel="noreferrer" aria-label="Instagram"><Icon name="instagram"/></a>:null}<MobileMenu categories={categories} settings={settings} navigation={navigation}/></div></div></header></>;
+export default function Header({ settings, categories, navigation }: { settings: SiteSettings; categories: Category[]; navigation: NavigationItem[] }) {
+  const headerItems = navigation
+    .filter((item) => item.location === "header" && item.is_active)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .slice(0, 5);
+
+  return <>
+    {settings.announcement_enabled && settings.announcement_text ? (
+      <div className="hs-announcement">
+        <a href={settings.announcement_url || "#produtos-dos-videos"}>{settings.announcement_text}<Icon name="arrow" size={14} /></a>
+      </div>
+    ) : null}
+    <header className={`hs-header ${settings.sticky_header ? "is-sticky" : ""}`}>
+      <div className="hs-container hs-header-inner">
+        <Link className="hs-brand" href="/" aria-label={`Página inicial de ${settings.site_name}`}>
+          <span className="hs-brand-mark"><img src={settings.logo_url || "/brand/hs-monogram.svg"} alt="" /></span>
+          <span className="hs-brand-name"><strong>{settings.site_name}</strong><small>{settings.header_tagline || "Achou no vídeo. Encontrou aqui."}</small></span>
+        </Link>
+
+        {settings.show_header_search ? <div className="hs-header-search"><SearchBox /></div> : null}
+
+        <nav className="hs-desktop-nav" aria-label="Navegação principal">
+          {headerItems.length ? headerItems.map((item) => (
+            <Link href={item.url} key={item.id} target={item.open_new_tab ? "_blank" : undefined}>{item.label}</Link>
+          )) : <>
+            <Link href="/#produtos-dos-videos">Dos vídeos</Link>
+            <Link href="/#categorias">Categorias</Link>
+            <Link href="/#produtos">Todos</Link>
+          </>}
+        </nav>
+
+        <div className="hs-header-actions">
+          <Link className="hs-header-search-button" href="/busca" aria-label="Buscar produtos"><Icon name="search" /></Link>
+          <MobileMenu categories={categories} settings={settings} navigation={navigation} />
+        </div>
+      </div>
+    </header>
+  </>;
 }

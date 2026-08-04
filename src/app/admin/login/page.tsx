@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
     <main className="login-page-pro">
       <div className="login-decoration login-decoration-one" /><div className="login-decoration login-decoration-two" />
       <section className="login-card-pro">
-        <div className="login-brand"><img src="/brand/hs-logo.png" alt="H&S Achadinhos" /><div><strong>H&S Achadinhos</strong><small>Painel administrativo</small></div></div>
+        <div className="login-brand"><img src="/brand/hs-monogram.svg" alt="H&S Achadinhos" /><div><strong>H&S Achadinhos</strong><small>Painel administrativo</small></div></div>
         <div className="login-heading"><span><Icon name="sparkles" size={16} /> Acesso administrativo</span><h1>Entrar no painel</h1><p>Use seu e-mail e senha de administrador.</p></div>
         {error ? <div className="error">{error}</div> : null}
         <form onSubmit={submit}>
