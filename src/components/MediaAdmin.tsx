@@ -16,7 +16,7 @@ export default function MediaAdmin() {
       if (listError) return;
       for (const item of data ?? []) {
         const fullName = prefix ? `${prefix}/${item.name}` : item.name;
-        if (item.id) next.push({ bucket: bucketName, name: fullName, url: supabase!.storage.from(bucketName).getPublicUrl(fullName).data.publicUrl, created_at: item.created_at, metadata: item.metadata as { size?: number } });
+        if (item.id) next.push({ bucket: bucketName, name: fullName, url: supabase!.storage.from(bucketName).getPublicUrl(fullName).data.publicUrl, created_at: item.created_at ?? undefined, metadata: item.metadata as { size?: number } });
         else if (depth < 3) await scan(bucketName, fullName, depth + 1);
       }
     }
