@@ -1,0 +1,58 @@
+name: Instalar projeto final
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  instalar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verificar ZIP
+        run: |
+          test -f hs-achadinhos-final.zip
+          unzip -t hs-achadinhos-final.zip
+
+      - name: Extrair e substituir projeto
+        run: |
+          rm -rf /tmp/hs-final
+          mkdir -p /tmp/hs-final
+
+          unzip -q hs-achadinhos-final.zip -d /tmp/hs-final
+
+          test -f /tmp/hs-final/package.json
+          test -d /tmp/hs-final/src
+          test -d /tmp/hs-final/public
+          test -d /tmp/hs-final/supabase
+
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name ".git" \
+            ! -name ".github" \
+            ! -name "hs-achadinhos-final.zip" \
+            -exec rm -rf {} +
+
+          cp -a /tmp/hs-final/. .
+
+          rm -rf /tmp/hs-final
+          rm -f hs-achadinhos-final.zip
+
+          rm -f .github/workflows/instalar-projeto.yml
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+
+      - name: Publicar projeto
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "Instalar H&S Achadinhos Final" || exit 0
+          git push
