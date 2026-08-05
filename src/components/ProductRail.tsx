@@ -1,6 +1,58 @@
 "use client";
-import { useEffect,useRef,useState } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import type { Product } from "@/lib/types";
 import ProductCard from "./ProductCard";
 import Icon from "./Icon";
-export default function ProductRail({products,autoplay=true,interval=4200}:{products:Product[];autoplay?:boolean;interval?:number}){const ref=useRef<HTMLDivElement>(null);const[paused,setPaused]=useState(false);function move(direction:number){const node=ref.current;if(!node)return;node.scrollBy({left:direction*Math.min(node.clientWidth*.78,360),behavior:"smooth"});}useEffect(()=>{if(!autoplay||paused||products.length<3)return;const timer=setInterval(()=>{const node=ref.current;if(!node)return;const end=node.scrollLeft+node.clientWidth>=node.scrollWidth-20;if(end)node.scrollTo({left:0,behavior:"smooth"});else move(1);},Math.max(3000,interval));return()=>clearInterval(timer);},[autoplay,paused,interval,products.length]);return <div className="product-rail-shell-v5" onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)}><button className="rail-arrow-v5 left" onClick={()=>move(-1)} aria-label="Produtos anteriores"><Icon name="arrow"/></button><div className="product-rail-v5" ref={ref}>{products.map((p)=><ProductCard key={p.id} product={p}/>)}</div><button className="rail-arrow-v5 right" onClick={()=>move(1)} aria-label="Próximos produtos"><Icon name="arrow"/></button></div>}
+
+export default function ProductRail({ products, autoplay = true, interval = 4600 }: { products: Product[]; autoplay?: boolean; interval?: number }) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const [paused, setPaused] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  const move = (direction: number) => {
+    const rail = railRef.current;
+    if (!rail) return;
+    rail.scrollBy({ left: direction * Math.max(rail.clientWidth * 0.82, 300), behavior: reducedMotion ? "auto" : "smooth" });
+  };
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncMotion = () => setReducedMotion(media.matches);
+    const syncVisibility = () => setPageVisible(document.visibilityState === "visible");
+    syncMotion();
+    syncVisibility();
+    media.addEventListener?.("change", syncMotion);
+    document.addEventListener("visibilitychange", syncVisibility);
+    return () => {
+      media.removeEventListener?.("change", syncMotion);
+      document.removeEventListener("visibilitychange", syncVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!autoplay || paused || reducedMotion || !pageVisible || products.length < 3) return;
+    const timer = window.setInterval(() => {
+      const rail = railRef.current;
+      if (!rail) return;
+      const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 24;
+      atEnd ? rail.scrollTo({ left: 0, behavior: "smooth" }) : move(1);
+    }, Math.max(3800, interval));
+    return () => window.clearInterval(timer);
+  }, [autoplay, interval, pageVisible, paused, products.length, reducedMotion]);
+
+  return <div
+    className="hs-product-rail-shell"
+    onMouseEnter={() => setPaused(true)}
+    onMouseLeave={() => setPaused(false)}
+    onFocusCapture={() => setPaused(true)}
+    onBlurCapture={() => setPaused(false)}
+    onPointerDown={() => setPaused(true)}
+    onPointerUp={() => window.setTimeout(() => setPaused(false), 3600)}
+  >
+    <button className="hs-product-rail__arrow is-prev" onClick={() => move(-1)} aria-label="Produtos anteriores"><Icon name="arrow" /></button>
+    <div className="hs-product-rail" ref={railRef}>{products.map((product) => <ProductCard product={product} key={product.id} />)}</div>
+    <button className="hs-product-rail__arrow is-next" onClick={() => move(1)} aria-label="Próximos produtos"><Icon name="arrow" /></button>
+  </div>;
+}

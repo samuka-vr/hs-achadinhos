@@ -1,60 +1,23 @@
 import Link from "next/link";
 import type { Category, NavigationItem, SiteSettings } from "@/lib/types";
-import Icon from "./Icon";
+import Icon, { type IconName } from "./Icon";
+import { isSafePublicUrl, safePublicHref } from "@/lib/security";
 
-export default function Footer({ settings }: { settings: SiteSettings; categories: Category[]; navigation: NavigationItem[] }) {
-  const socials = [
-    ["instagram", settings.instagram, "Instagram"],
-    ["tiktok", settings.tiktok, "TikTok"],
-    ["store", settings.shopee_showcase, "Vitrine Shopee"],
-    ["whatsapp", settings.whatsapp, "WhatsApp"],
-    ["youtube", settings.youtube, "YouTube"],
-    ["facebook", settings.facebook, "Facebook"],
-    ["telegram", settings.telegram, "Telegram"],
-  ] as const;
-  const active = socials.filter(([, url]) => Boolean(url));
-
+export default function Footer({ settings, categories, navigation }: { settings: SiteSettings; categories: Category[]; navigation: NavigationItem[] }) {
+  const socials: Array<[string, string, IconName]> = [[settings.instagram, "Instagram", "instagram"], [settings.tiktok, "TikTok", "tiktok"], [settings.shopee_showcase, "Vitrine Shopee", "store"], [settings.whatsapp, "WhatsApp", "whatsapp"], [settings.youtube, "YouTube", "youtube"]];
+  const footerItems = navigation.filter((item) => item.location === "footer" && item.is_active && isSafePublicUrl(item.url)).sort((a, b) => a.sort_order - b.sort_order);
   return (
-    <footer className="hs-social-footer" aria-label="Rodapé">
-      <div className="hs-container hs-social-footer-inner">
-        <div className="hs-footer-brand-panel">
-          <div className="hs-footer-brand-lockup">
-            <span className="hs-footer-brand-mark"><img src={settings.logo_url || "/brand/hs-monogram.svg"} alt="" /></span>
-            <div>
-              <strong>{settings.site_name || "H&S Achadinhos"}</strong>
-              <span>Viu no vídeo? Encontre aqui.</span>
-            </div>
-          </div>
-          <p>Os produtos e preços podem mudar na Shopee. Ao acessar uma oferta, você será direcionado para a plataforma parceira.</p>
-        </div>
-
-        <div className="hs-footer-social-block">
-          <div className="hs-footer-social-title">
-            <strong>{settings.footer_social_title || "Acompanhe os próximos achados"}</strong>
-            <span>{settings.footer_social_subtitle || "Vídeos novos, produtos novos e links organizados."}</span>
-          </div>
-          <nav aria-label="Redes sociais">
-            {active.length ? (
-              active.map(([name, url, label]) => (
-                <a href={url} target="_blank" rel="noreferrer" key={name} aria-label={label}>
-                  <span><Icon name={name} /></span>
-                  <b>{label}</b>
-                </a>
-              ))
-            ) : (
-              <span className="hs-footer-empty">Os links das redes serão adicionados em breve.</span>
-            )}
-          </nav>
-        </div>
+    <footer className="hs-footer">
+      <div className="hs-shell hs-footer__top">
+        <div className="hs-footer__brand"><span><img src={settings.logo_url || "/brand/hs-monogram.svg"} alt="" /></span><div><strong>{settings.site_name}</strong><p>{settings.footer_description || "Produtos dos vídeos organizados para você encontrar rápido."}</p></div></div>
+        <div className="hs-footer__column"><strong>Explorar</strong><Link href="/#produtos-dos-videos">Dos vídeos</Link><Link href="/#categorias">Categorias</Link><Link href="/#produtos">Catálogo</Link><Link href="/busca">Buscar</Link></div>
+        <div className="hs-footer__column"><strong>Categorias</strong>{categories.slice(0, 5).map((category) => <Link href={`/categoria/${category.slug}`} key={category.id}>{category.name}</Link>)}</div>
+        <div className="hs-footer__column"><strong>Informações</strong>{footerItems.length ? footerItems.map((item) => <Link href={safePublicHref(item.url, "/")} key={item.id} target={item.open_new_tab ? "_blank" : undefined} rel={item.open_new_tab ? "noopener noreferrer" : undefined}>{item.label}</Link>) : <><Link href="/sobre">Sobre</Link><Link href="/privacidade">Privacidade</Link></>}</div>
       </div>
-
-      <div className="hs-container hs-footer-bottom">
-        <span>© {new Date().getFullYear()} {settings.site_name || "H&S Achadinhos"}</span>
-        <div>
-          <Link href="/politica-de-privacidade">Privacidade</Link>
-          <Link href="/termos-de-uso">Termos</Link>
-          <Link href="/aviso-de-afiliado">Aviso de afiliado</Link>
-        </div>
+      <div className="hs-shell hs-footer__bottom">
+        <div className="hs-footer__socials">{socials.filter(([url]) => isSafePublicUrl(url)).map(([url, label, icon]) => <a href={safePublicHref(url)} key={label} target="_blank" rel="noopener noreferrer" aria-label={label}><Icon name={icon} /></a>)}</div>
+        <p>Os links levam à Shopee. Preços e estoque podem mudar.</p>
+        <small>© {new Date().getFullYear()} {settings.site_name}</small>
       </div>
     </footer>
   );

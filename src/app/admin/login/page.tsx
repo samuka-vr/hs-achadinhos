@@ -14,33 +14,32 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(searchParams.get("error") === "unauthorized" ? "Este usuário não tem permissão de administrador." : "");
 
-  useEffect(() => { const supabase = getBrowserSupabase(); if (!supabase) return; void supabase.auth.getSession().then(({ data }) => { if (data.session) router.replace("/admin"); }); }, [router]);
+  useEffect(() => {
+    const supabase = getBrowserSupabase();
+    if (!supabase) return;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      if (!user) return;
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+      if (profile?.role === "admin") router.replace("/admin");
+    })();
+  }, [router]);
 
   async function submit(event: FormEvent) {
-    event.preventDefault(); setError("");
-    const supabase = getBrowserSupabase(); if (!supabase) { setError("Supabase ainda não foi configurado."); return; }
-    setLoading(true);
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    event.preventDefault(); setError(""); setLoading(true);
+    const supabase = getBrowserSupabase();
+    if (!supabase) { setError("Supabase ainda não foi configurado."); setLoading(false); return; }
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (authError || !data.user) { setError("E-mail ou senha inválidos."); setLoading(false); return; }
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
     if (profile?.role !== "admin") { await supabase.auth.signOut(); setError("Este usuário não está cadastrado como administrador."); setLoading(false); return; }
-    const next = searchParams.get("next"); router.replace(next?.startsWith("/admin") ? next : "/admin");
+    const next = searchParams.get("next");
+    router.replace(next?.startsWith("/admin") && !next.startsWith("//") ? next : "/admin");
   }
 
-  return (
-    <main className="login-page-pro">
-      <div className="login-decoration login-decoration-one" /><div className="login-decoration login-decoration-two" />
-      <section className="login-card-pro">
-        <div className="login-brand"><img src="/brand/hs-monogram.svg" alt="H&S Achadinhos" /><div><strong>H&S Achadinhos</strong><small>Painel administrativo</small></div></div>
-        <div className="login-heading"><span><Icon name="sparkles" size={16} /> Acesso administrativo</span><h1>Entrar no painel</h1><p>Use seu e-mail e senha de administrador.</p></div>
-        {error ? <div className="error">{error}</div> : null}
-        <form onSubmit={submit}>
-          <label className="admin-label">E-mail<div className="login-input-wrap"><Icon name="mail" /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" placeholder="seu@email.com" /></div></label>
-          <label className="admin-label">Senha<div className="login-input-wrap"><Icon name="settings" /><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder="Sua senha" /></div></label>
-          <button className="admin-button login-submit" type="submit" disabled={loading}>{loading ? "Entrando..." : "Entrar no painel"}<Icon name="arrow" /></button>
-        </form>
-        <Link className="login-back" href="/"><Icon name="arrow" size={16} style={{ transform: "rotate(180deg)" }} />Voltar para o site</Link>
-      </section>
-    </main>
-  );
+  return <main className="ha-login">
+    <section className="ha-login__intro"><Link href="/" className="ha-login__brand"><span><img src="/brand/hs-monogram.svg" alt="" /></span><div><strong>H&S Achadinhos</strong><small>H&S Studio</small></div></Link><div><span>PAINEL DA MARCA</span><h1>Administre tudo com poucos toques.</h1><p>Produtos, imagens, conteúdo e resultados em um painel feito para celular.</p></div><ul><li><Icon name="products" /><span><strong>Catálogo organizado</strong><small>Edite produtos e fotos rapidamente.</small></span></li><li><Icon name="layout" /><span><strong>Site sob controle</strong><small>Publique seções, banners e redes.</small></span></li><li><Icon name="chart" /><span><strong>Resultados claros</strong><small>Acompanhe cliques e pesquisas.</small></span></li></ul></section>
+    <section className="ha-login__card"><div><span>ACESSO SEGURO</span><h2>Entrar no H&S Studio</h2><p>Use seu e-mail e senha de administrador.</p></div>{error ? <div className="error">{error}</div> : null}<form onSubmit={submit}><label><span>E-mail</span><div><Icon name="mail" /><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" placeholder="seu@email.com" /></div></label><label><span>Senha</span><div><Icon name="shield" /><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" placeholder="Sua senha" /></div></label><button type="submit" disabled={loading}>{loading ? "Entrando..." : "Entrar no painel"}<Icon name="arrow" /></button></form><Link href="/" className="ha-login__back"><Icon name="arrow" size={16} />Voltar ao site</Link></section>
+  </main>;
 }

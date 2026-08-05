@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { Category } from "@/lib/types";
 import { slugify } from "@/lib/utils";
+import { validateImageFile } from "@/lib/uploads";
 import Icon from "./Icon";
 import CategoryAliasesAdmin from "./CategoryAliasesAdmin";
 
@@ -16,7 +17,7 @@ export default function CategoriesAdmin(){
  useEffect(()=>{void load();},[]);
  function createNew(){setEditingId(null);setForm({...EMPTY,sort_order:String(categories.length+1)});setFile(null);setOpen(true);}
  function edit(item:Category){setEditingId(item.id);setForm({name:item.name,slug:item.slug,icon:item.icon||"",image_url:item.image_url||"",description:item.description||"",accent_color:item.accent_color||"#e87378",sort_order:String(item.sort_order),is_active:item.is_active});setFile(null);setOpen(true);window.scrollTo({top:0,behavior:"smooth"});}
- async function uploadImage(slug:string){if(!file)return form.image_url.trim()||null;const supabase=getBrowserSupabase();if(!supabase)return null;if(file.size>8*1024*1024)throw new Error("A imagem deve ter no máximo 8 MB.");const ext=file.name.split(".").pop()||"jpg";const path=`categories/${slug}-${Date.now()}.${ext}`;const result=await supabase.storage.from("site-assets").upload(path,file,{contentType:file.type});if(result.error)throw result.error;return supabase.storage.from("site-assets").getPublicUrl(path).data.publicUrl;}
+ async function uploadImage(slug:string){if(!file)return form.image_url.trim()||null;const supabase=getBrowserSupabase();if(!supabase)return null;const validated=await validateImageFile(file);const path=`categories/${slug}-${Date.now()}.${validated.extension}`;const result=await supabase.storage.from("site-assets").upload(path,file,{contentType:validated.contentType,upsert:false});if(result.error)throw result.error;return supabase.storage.from("site-assets").getPublicUrl(path).data.publicUrl;}
  async function save(event:FormEvent){event.preventDefault();setSaving(true);setError("");setMessage("");const supabase=getBrowserSupabase();if(!supabase)return;try{const slug=slugify(form.slug||form.name);const image_url=await uploadImage(slug);const payload={name:form.name.trim(),slug,icon:form.icon.trim()||null,image_url,description:form.description.trim()||null,accent_color:form.accent_color,sort_order:Number(form.sort_order)||0,is_active:form.is_active};const result=editingId?await supabase.from("categories").update(payload).eq("id",editingId):await supabase.from("categories").insert(payload);if(result.error)throw result.error;setMessage(editingId?"Categoria atualizada.":"Categoria criada.");setOpen(false);await load();}catch(caught){setError(caught instanceof Error?caught.message:"Erro ao salvar.");}finally{setSaving(false);}}
  async function toggle(item:Category){const supabase=getBrowserSupabase();await supabase?.from("categories").update({is_active:!item.is_active}).eq("id",item.id);await load();}
  async function remove(item:Category){if((counts[item.id]||0)>0){setError("Mova os produtos antes de excluir esta categoria.");return;}if(!confirm(`Excluir “${item.name}”?`))return;const supabase=getBrowserSupabase();await supabase?.from("categories").delete().eq("id",item.id);await load();}

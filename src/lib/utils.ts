@@ -102,3 +102,22 @@ export function safeNumber(value: unknown, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
+
+export function getProductPriceDisplay(product: {
+  current_price: number | null;
+  old_price: number | null;
+  badge?: string | null;
+}) {
+  const current = formatPrice(product.current_price);
+  const secondary = formatPrice(product.old_price);
+  const badge = product.badge || "";
+  const promotional = /oferta|desconto|promo/i.test(badge);
+
+  if (!current) return { main: "Ver preço na Shopee", secondary: "", mode: "hidden" as const };
+  if (secondary && product.old_price && product.current_price && product.old_price > product.current_price) {
+    if (promotional) return { main: current, secondary, mode: "promotion" as const };
+    return { main: `${current} a ${secondary}`, secondary: "", mode: "range" as const };
+  }
+  if (/a partir/i.test(badge)) return { main: `A partir de ${current}`, secondary: "", mode: "from" as const };
+  return { main: current, secondary: "", mode: "fixed" as const };
+}

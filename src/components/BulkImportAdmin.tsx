@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { slugify } from "@/lib/utils";
+import { isAllowedAffiliateUrl } from "@/lib/security";
 import Icon from "./Icon";
 
 type DuplicateAction = "skip" | "update";
@@ -209,8 +210,7 @@ function validateItem(item: Omit<ParsedItem, "errors">) {
   if (!item.priceText) errors.push("Valor não identificado");
   if (item.priceMin === null) errors.push("Preço não reconhecido");
   try {
-    const url = new URL(item.affiliateUrl);
-    if (url.protocol !== "https:") errors.push("O link precisa começar com https://");
+    if (!isAllowedAffiliateUrl(item.affiliateUrl)) errors.push("Use um link oficial da Shopee começando com https://");
   } catch {
     errors.push("Link inválido ou ausente");
   }

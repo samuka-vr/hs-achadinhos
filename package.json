@@ -1,24 +1,28 @@
 {
-  "name": "hs-achadinhos-interface-definitiva",
-  "version": "1.0.0",
+  "name": "hs-achadinhos-orbita",
+  "version": "14.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "lint": "node scripts/check-source.mjs",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run build"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.57.4",
-    "next": "15",
+    "@supabase/supabase-js": "2.57.4",
+    "next": "15.5.22",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },
   "devDependencies": {
-    "@types/node": "^22.15.0",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "typescript": "^5.8.3"
+    "@types/node": "22.15.0",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.0",
+    "typescript": "5.8.3"
   }
 }

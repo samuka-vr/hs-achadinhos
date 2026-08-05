@@ -1,2 +1,6 @@
 import Link from "next/link";
-export default function NotFound() { return <main className="page"><div className="container"><div className="empty"><h1>Página não encontrada</h1><p>O conteúdo pode ter sido removido ou desativado.</p><div style={{ marginTop: 18 }}><Link className="button" href="/">Voltar ao início</Link></div></div></div></main>; }
+import Icon from "@/components/Icon";
+
+export default function NotFound() {
+  return <main className="hs-system-page"><section><span><Icon name="search" size={34} /></span><small>ERRO 404</small><h1>Essa página não está por aqui.</h1><p>O conteúdo pode ter sido removido, renomeado ou desativado.</p><Link href="/">Voltar ao início <Icon name="arrow" size={16} /></Link></section></main>;
+}

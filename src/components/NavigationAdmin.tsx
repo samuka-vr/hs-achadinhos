@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { NavigationItem } from "@/lib/types";
 import Icon, { type IconName } from "./Icon";
+import { isSafePublicUrl } from "@/lib/security";
 
 const EMPTY = { label: "", url: "", location: "header" as NavigationItem["location"], icon: "link", sort_order: 0, is_active: true, open_new_tab: false };
 export default function NavigationAdmin() {
@@ -11,7 +12,7 @@ export default function NavigationAdmin() {
   async function load() { const supabase = getBrowserSupabase(); if (!supabase) return; const { data, error: loadError } = await supabase.from("navigation_items").select("*").order("location").order("sort_order"); if (loadError) setError(loadError.message); else setItems((data ?? []) as NavigationItem[]); }
   useEffect(() => { void load(); }, []);
   function edit(item: NavigationItem) { setEditingId(item.id); setForm({ label: item.label, url: item.url, location: item.location, icon: item.icon || "link", sort_order: item.sort_order, is_active: item.is_active, open_new_tab: item.open_new_tab }); setOpen(true); }
-  async function save(e: FormEvent) { e.preventDefault(); const supabase = getBrowserSupabase(); if (!supabase) return; const result = editingId ? await supabase.from("navigation_items").update(form).eq("id", editingId) : await supabase.from("navigation_items").insert(form); if (result.error) setError(result.error.message); else { setMessage("Menu atualizado."); setOpen(false); setEditingId(null); setForm(EMPTY); await load(); } }
+  async function save(e: FormEvent) { e.preventDefault(); setError(""); setMessage(""); if (!isSafePublicUrl(form.url)) { setError("Use um caminho interno começando com / ou um link HTTPS válido."); return; } const supabase = getBrowserSupabase(); if (!supabase) return; const result = editingId ? await supabase.from("navigation_items").update(form).eq("id", editingId) : await supabase.from("navigation_items").insert(form); if (result.error) setError(result.error.message); else { setMessage("Menu atualizado."); setOpen(false); setEditingId(null); setForm(EMPTY); await load(); } }
   async function remove(id: string) { if (!confirm("Excluir este link?")) return; const supabase = getBrowserSupabase(); await supabase?.from("navigation_items").delete().eq("id", id); await load(); }
   const locations = [["header","Cabeçalho"],["mobile","Menu mobile"],["footer","Rodapé"]] as const;
   return <><div className="admin-page-heading-v5"><div><span>NAVEGAÇÃO</span><h1>Menus e links</h1><p>Escolha exatamente quais links aparecem em cada parte do site.</p></div><button className="admin-button-v5" onClick={() => { setForm({ ...EMPTY, sort_order: items.length + 1 }); setEditingId(null); setOpen(true); }}><Icon name="plus" />Novo link</button></div>{error ? <div className="admin-alert-v5 error">{error}</div> : null}{message ? <div className="admin-alert-v5 success">{message}</div> : null}

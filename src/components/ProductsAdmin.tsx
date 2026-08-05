@@ -5,6 +5,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { Category, Product, ProductImage } from "@/lib/types";
 import { formatPrice, slugify } from "@/lib/utils";
+import { isAllowedAffiliateUrl, isSafePublicUrl } from "@/lib/security";
+import { replaceFileExtension, validateImageFile } from "@/lib/uploads";
 import Icon from "./Icon";
 
 type EditorTab = "basic" | "media" | "display" | "seo";
@@ -243,15 +245,17 @@ export default function ProductsAdmin() {
   }
 
   async function uploadOne(file: File, path: string) {
-    if (file.size > 8 * 1024 * 1024) throw new Error(`A imagem “${file.name}” passa de 8 MB.`);
-    if (!file.type.startsWith("image/")) throw new Error("Escolha uma imagem válida.");
-
+    const validated = await validateImageFile(file);
+    const safePath = replaceFileExtension(path, validated.extension);
     const supabase = getBrowserSupabase();
     if (!supabase) throw new Error("Supabase não configurado.");
 
-    const result = await supabase.storage.from("product-images").upload(path, file, { contentType: file.type });
+    const result = await supabase.storage.from("product-images").upload(safePath, file, {
+      contentType: validated.contentType,
+      upsert: false,
+    });
     if (result.error) throw result.error;
-    return supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+    return supabase.storage.from("product-images").getPublicUrl(safePath).data.publicUrl;
   }
 
   async function quickReplaceCover(product: Product, file: File | null) {
@@ -305,8 +309,22 @@ export default function ProductsAdmin() {
       if (!slug) throw new Error("Informe um nome válido.");
       if (!form.category_id) throw new Error("Escolha uma categoria.");
 
+      if (!isAllowedAffiliateUrl(form.affiliate_url)) throw new Error("Use um link oficial da Shopee começando com https://");
       const affiliate = new URL(form.affiliate_url);
-      if (affiliate.protocol !== "https:") throw new Error("O link precisa começar com https://");
+      if (form.image_url.trim() && !isSafePublicUrl(form.image_url)) throw new Error("A URL da imagem precisa ser local ou começar com https://");
+      if (form.video_url.trim() && !isSafePublicUrl(form.video_url)) throw new Error("O link do vídeo precisa começar com https://");
+
+      const parsePrice = (value: string, label: string) => {
+        if (!value.trim()) return null;
+        const parsed = Number(value.replace(/\./g, "").replace(",", "."));
+        if (!Number.isFinite(parsed) || parsed < 0) throw new Error(`${label} inválido.`);
+        return Math.round(parsed * 100) / 100;
+      };
+      const currentPrice = parsePrice(form.current_price, "Preço atual");
+      const oldPrice = parsePrice(form.old_price, "Preço anterior");
+      if (oldPrice !== null && currentPrice !== null && oldPrice < currentPrice) {
+        throw new Error("O preço anterior não pode ser menor que o preço atual.");
+      }
 
       let coverUrl = form.image_url.trim() || null;
       if (coverFile) {
@@ -321,8 +339,8 @@ export default function ProductsAdmin() {
         category_id: form.category_id,
         affiliate_url: affiliate.toString(),
         image_url: coverUrl,
-        current_price: form.current_price ? Number(form.current_price.replace(",", ".")) : null,
-        old_price: form.old_price ? Number(form.old_price.replace(",", ".")) : null,
+        current_price: currentPrice,
+        old_price: oldPrice,
         short_description: form.short_description.trim() || null,
         tags: form.tags.split(",").map((item) => item.trim()).filter(Boolean),
         badge: form.badge.trim() || null,
@@ -649,7 +667,7 @@ export default function ProductsAdmin() {
                     <input inputMode="decimal" value={form.current_price} onChange={(event) => update("current_price", event.target.value)} placeholder="29,90" />
                   </label>
                   <label>
-                    <span>Preço anterior ou máximo</span>
+                    <span>Preço anterior ou valor máximo</span>
                     <input inputMode="decimal" value={form.old_price} onChange={(event) => update("old_price", event.target.value)} placeholder="59,90" />
                   </label>
                   <label>

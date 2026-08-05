@@ -22,22 +22,22 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    if (!supabase) { setLoading(false); setError("Supabase não configurado."); return; }
     void (async () => {
       const since = new Date(); since.setDate(since.getDate() - 29);
-      const [p, c, cl, s, v] = await Promise.all([
-        supabase.from("products").select("id,name,image_url,click_count,is_active,is_video_product,product_code,affiliate_url,categories(name)").order("click_count", { ascending: false }),
+      const [productResult, categoryResult, clickResult, searchResult, viewResult] = await Promise.all([
+        supabase.from("products").select("id,name,image_url,click_count,is_active,is_video_product,product_code,affiliate_url,categories(name)").order("click_count", { ascending: false }).limit(300),
         supabase.from("categories").select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("product_clicks").select("clicked_at").gte("clicked_at", since.toISOString()),
-        supabase.from("search_events").select("query,results_count,searched_at").gte("searched_at", since.toISOString()),
-        supabase.from("page_views").select("viewed_at").gte("viewed_at", since.toISOString()),
+        supabase.from("product_clicks").select("clicked_at").gte("clicked_at", since.toISOString()).limit(5000),
+        supabase.from("search_events").select("query,results_count,searched_at").gte("searched_at", since.toISOString()).limit(5000),
+        supabase.from("page_views").select("viewed_at").gte("viewed_at", since.toISOString()).limit(5000),
       ]);
-      if (p.error) setError("Alguns dados não puderam ser carregados.");
-      setProducts((p.data ?? []) as unknown as ProductRow[]);
-      setCategoryCount(c.count ?? 0);
-      setClicks((cl.data ?? []) as ClickRow[]);
-      setSearches((s.data ?? []) as SearchRow[]);
-      setViews((v.data ?? []) as ViewRow[]);
+      if (productResult.error || categoryResult.error) setError("Alguns dados não puderam ser carregados.");
+      setProducts((productResult.data ?? []) as unknown as ProductRow[]);
+      setCategoryCount(categoryResult.count ?? 0);
+      setClicks((clickResult.data ?? []) as ClickRow[]);
+      setSearches((searchResult.data ?? []) as SearchRow[]);
+      setViews((viewResult.data ?? []) as ViewRow[]);
       setLoading(false);
     })();
   }, []);
@@ -46,81 +46,46 @@ export default function AdminDashboardPage() {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const seven = new Date(today); seven.setDate(seven.getDate() - 6);
     const points: ChartPoint[] = [];
-    for (let i = 29; i >= 0; i--) {
-      const day = new Date(today); day.setDate(day.getDate() - i);
-      const key = day.toISOString().slice(0, 10);
-      points.push({ date: key, clicks: clicks.filter((item) => item.clicked_at.slice(0, 10) === key).length });
-    }
+    for (let offset = 29; offset >= 0; offset -= 1) { const day = new Date(today); day.setDate(day.getDate() - offset); const key = day.toISOString().slice(0, 10); points.push({ date: key, clicks: clicks.filter((item) => item.clicked_at.slice(0, 10) === key).length }); }
     const queries = new Map<string, number>();
-    searches.forEach((item) => queries.set(item.query.toLowerCase(), (queries.get(item.query.toLowerCase()) || 0) + 1));
-    return {
-      todayClicks: clicks.filter((item) => new Date(item.clicked_at) >= today).length,
-      sevenClicks: clicks.filter((item) => new Date(item.clicked_at) >= seven).length,
-      todayViews: views.filter((item) => new Date(item.viewed_at) >= today).length,
-      zeroSearches: searches.filter((item) => item.results_count === 0).length,
-      points,
-      topQueries: [...queries.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6),
-    };
+    searches.forEach((item) => { const key = item.query.trim().toLowerCase(); if (key) queries.set(key, (queries.get(key) || 0) + 1); });
+    return { todayClicks: clicks.filter((item) => new Date(item.clicked_at) >= today).length, sevenClicks: clicks.filter((item) => new Date(item.clicked_at) >= seven).length, todayViews: views.filter((item) => new Date(item.viewed_at) >= today).length, zeroSearches: searches.filter((item) => item.results_count === 0).length, points, topQueries: [...queries.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }, [clicks, searches, views]);
 
-  if (loading) return <div className="studio-inline-loading"><span /><strong>Organizando seus dados...</strong></div>;
+  if (loading) return <div className="ha-inline-loading"><span /><strong>Organizando seus dados...</strong></div>;
+  const published = products.filter((item) => item.is_active).length;
+  const drafts = products.length - published;
+  const missingImages = products.filter((item) => !item.image_url);
+  const linkProblems = products.filter((item) => !item.affiliate_url);
+  const problems = products.filter((item) => !item.image_url || !item.affiliate_url || !item.product_code);
 
-  const published = products.filter((product) => product.is_active).length;
-  const videoProducts = products.filter((product) => product.is_video_product).length;
-  const problems = products.filter((product) => !product.image_url || !product.affiliate_url || !product.product_code);
+  return <div className="ha-dashboard">
+    <section className="ha-dashboard__welcome"><div><span>VISÃO GERAL</span><h1>Seu catálogo, sem complicação.</h1><p>Veja o que precisa de atenção e continue de onde parou.</p></div><div><Link href="/admin/produtos/importar"><Icon name="code" />Importar lista</Link><Link href="/admin/produtos"><Icon name="plus" />Adicionar produto</Link></div></section>
+    {error ? <div className="ha-alert is-error">{error}</div> : null}
 
-  return <>
-    <section className="studio-welcome">
-      <div><span>VISÃO GERAL</span><h1>Seu site, em um só lugar.</h1><p>Acompanhe o que está funcionando e publique novos achadinhos sem perder tempo.</p></div>
-      <div><Link href="/admin/editor" className="studio-button secondary"><Icon name="layout" />Editar página</Link><Link href="/admin/produtos" className="studio-button"><Icon name="plus" />Novo produto</Link></div>
+    <section className="ha-attention-grid">
+      <Link href="/admin/produtos" className={missingImages.length ? "warning" : "ok"}><span><Icon name="image" /></span><div><small>Sem imagem</small><strong>{missingImages.length}</strong><em>Corrigir agora</em></div><Icon name="arrow" size={16} /></Link>
+      <Link href="/admin/produtos" className={drafts ? "soft" : "ok"}><span><Icon name="text" /></span><div><small>Rascunhos</small><strong>{drafts}</strong><em>Continuar edição</em></div><Icon name="arrow" size={16} /></Link>
+      <Link href="/admin/produtos" className={linkProblems.length ? "danger" : "ok"}><span><Icon name="link" /></span><div><small>Links incompletos</small><strong>{linkProblems.length}</strong><em>Revisar catálogo</em></div><Icon name="arrow" size={16} /></Link>
     </section>
 
-    {error ? <div className="studio-alert error">{error}</div> : null}
-
-    <section className="studio-metrics">
-      <article><span className="metric-icon rose"><Icon name="products" /></span><div><small>Produtos publicados</small><strong>{published}</strong><em>{videoProducts} dos vídeos</em></div></article>
-      <article><span className="metric-icon ink"><Icon name="eye" /></span><div><small>Visitas hoje</small><strong>{stats.todayViews}</strong><em>acessos ao site</em></div></article>
-      <article><span className="metric-icon sage"><Icon name="click" /></span><div><small>Cliques hoje</small><strong>{stats.todayClicks}</strong><em>{stats.sevenClicks} nos últimos 7 dias</em></div></article>
-      <article><span className="metric-icon amber"><Icon name="search" /></span><div><small>Sem resultado</small><strong>{stats.zeroSearches}</strong><em>buscas para revisar</em></div></article>
+    <section className="ha-metric-grid">
+      <article><span><Icon name="products" /></span><div><small>Produtos publicados</small><strong>{published}</strong><em>{products.length} cadastrados</em></div></article>
+      <article><span><Icon name="eye" /></span><div><small>Visitas hoje</small><strong>{stats.todayViews}</strong><em>acessos públicos</em></div></article>
+      <article><span><Icon name="click" /></span><div><small>Cliques hoje</small><strong>{stats.todayClicks}</strong><em>{stats.sevenClicks} em 7 dias</em></div></article>
+      <article><span><Icon name="search" /></span><div><small>Buscas sem resultado</small><strong>{stats.zeroSearches}</strong><em>termos para revisar</em></div></article>
     </section>
 
-    <section className="studio-dashboard-grid">
-      <article className="studio-panel studio-chart-panel">
-        <header><div><span>DESEMPENHO</span><h2>Cliques para a Shopee</h2></div><Link href="/admin/analytics">Abrir analytics <Icon name="arrow" size={15} /></Link></header>
-        <ClicksChart data={stats.points} />
-      </article>
-
-      <article className="studio-panel studio-quick-panel">
-        <header><div><span>ATALHOS</span><h2>O que deseja editar?</h2></div></header>
-        <div>
-          <Link href="/admin/produtos"><span><Icon name="products" /></span><div><strong>Produtos</strong><small>Links, imagens e códigos</small></div><Icon name="arrow" size={16} /></Link>
-          <Link href="/admin/produtos/importar"><span><Icon name="code" /></span><div><strong>Importar lista</strong><small>Cadastre vários produtos de uma vez</small></div><Icon name="arrow" size={16} /></Link>
-          <Link href="/admin/editor"><span><Icon name="layout" /></span><div><strong>Página inicial</strong><small>Blocos, títulos e ordem</small></div><Icon name="arrow" size={16} /></Link>
-          <Link href="/admin/aparencia"><span><Icon name="palette" /></span><div><strong>Identidade visual</strong><small>Cores, cards e tipografia</small></div><Icon name="arrow" size={16} /></Link>
-          <Link href="/admin/navegacao"><span><Icon name="navigation" /></span><div><strong>Menus e redes</strong><small>Links do site e do footer</small></div><Icon name="arrow" size={16} /></Link>
-        </div>
-      </article>
+    <section className="ha-dashboard-grid">
+      <article className="ha-panel ha-tasks"><header><div><span>PENDÊNCIAS</span><h2>O que precisa ser feito</h2></div><b>{problems.length}</b></header><div>{problems.slice(0, 6).map((product) => <Link href="/admin/produtos" key={product.id}><span><Icon name={!product.image_url ? "image" : !product.product_code ? "code" : "link"} /></span><div><strong>{product.name}</strong><small>{!product.image_url ? "Adicionar uma imagem" : !product.product_code ? "Adicionar o código" : "Revisar o link"}</small></div><Icon name="arrow" size={16} /></Link>)}{!problems.length ? <div className="ha-all-good"><Icon name="check" /><div><strong>Tudo em ordem.</strong><small>Nenhuma pendência no catálogo.</small></div></div> : null}</div></article>
+      <article className="ha-panel ha-shortcuts"><header><div><span>ATALHOS</span><h2>Ações frequentes</h2></div></header><div><Link href="/admin/produtos"><span><Icon name="products" /></span><strong>Produtos</strong><small>Fotos, preços e links</small></Link><Link href="/admin/editor"><span><Icon name="layout" /></span><strong>Página inicial</strong><small>Seções e ordem</small></Link><Link href="/admin/aparencia"><span><Icon name="palette" /></span><strong>Aparência</strong><small>Marca e componentes</small></Link><Link href="/admin/navegacao"><span><Icon name="navigation" /></span><strong>Redes e menus</strong><small>Links públicos</small></Link></div></article>
+      <article className="ha-panel ha-chart"><header><div><span>ÚLTIMOS 30 DIAS</span><h2>Cliques para a Shopee</h2></div><Link href="/admin/analytics">Detalhes <Icon name="arrow" size={15} /></Link></header><ClicksChart data={stats.points} /></article>
     </section>
 
-    <section className="studio-dashboard-lower">
-      <article className="studio-panel">
-        <header><div><span>MAIS ACESSADOS</span><h2>Produtos em destaque</h2></div><Link href="/admin/produtos">Ver produtos</Link></header>
-        <div className="studio-ranking">{products.slice(0, 6).map((product, index) => <div key={product.id}><b>{String(index + 1).padStart(2, "0")}</b>{product.image_url ? <img src={product.image_url} alt="" /> : <span className="ranking-placeholder"><Icon name="image" size={17} /></span>}<div><strong>{product.name}</strong><small>{product.product_code ? `Código ${product.product_code}` : product.categories?.name || "Sem categoria"}</small></div><em>{product.click_count}</em></div>)}</div>
-      </article>
-
-      <article className="studio-panel">
-        <header><div><span>REVISÃO</span><h2>Precisa da sua atenção</h2></div><b className="studio-count-badge">{problems.length}</b></header>
-        <div className="studio-review-list">{problems.slice(0, 6).map((product) => <Link href="/admin/produtos" key={product.id}><span><Icon name={!product.image_url ? "image" : !product.product_code ? "code" : "link"} /></span><div><strong>{product.name}</strong><small>{!product.image_url ? "Adicione uma imagem" : !product.product_code ? "Adicione o código do vídeo" : "Confira o link"}</small></div><Icon name="arrow" size={16} /></Link>)}</div>
-        {!problems.length ? <div className="studio-all-good"><Icon name="check" /><strong>Todos os cadastros estão completos.</strong></div> : null}
-      </article>
-
-      <article className="studio-panel">
-        <header><div><span>PESQUISAS</span><h2>O que procuram</h2></div><Link href="/admin/analytics">Detalhes</Link></header>
-        <div className="studio-query-list">{stats.topQueries.map(([query, count]) => <div key={query}><strong>{query}</strong><span>{count}</span></div>)}</div>
-        {!stats.topQueries.length ? <div className="studio-empty-mini">Ainda não há pesquisas registradas.</div> : null}
-      </article>
+    <section className="ha-dashboard-grid ha-dashboard-grid--bottom">
+      <article className="ha-panel"><header><div><span>MAIS ACESSADOS</span><h2>Produtos em destaque</h2></div><Link href="/admin/produtos">Ver produtos</Link></header><div className="ha-ranking">{products.slice(0, 6).map((product, index) => <div key={product.id}><b>{String(index + 1).padStart(2, "0")}</b>{product.image_url ? <img src={product.image_url} alt="" /> : <span><Icon name="image" size={17} /></span>}<div><strong>{product.name}</strong><small>{product.product_code || product.categories?.name || "Sem categoria"}</small></div><em>{product.click_count}</em></div>)}</div></article>
+      <article className="ha-panel"><header><div><span>PESQUISAS</span><h2>O que estão procurando</h2></div><Link href="/admin/analytics">Detalhes</Link></header><div className="ha-query-list">{stats.topQueries.map(([query, count]) => <div key={query}><strong>{query}</strong><span>{count}</span></div>)}</div>{!stats.topQueries.length ? <div className="ha-empty-mini">Ainda não há pesquisas registradas.</div> : null}</article>
     </section>
-
-    <footer className="studio-dashboard-note"><span><Icon name="categories" />{categoryCount} categorias ativas</span><span><Icon name="products" />{products.length} produtos cadastrados</span></footer>
-  </>;
+    <footer className="ha-dashboard__footer"><span><Icon name="categories" />{categoryCount} categorias</span><span><Icon name="products" />{products.length} produtos</span></footer>
+  </div>;
 }
