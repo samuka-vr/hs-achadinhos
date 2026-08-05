@@ -51,7 +51,7 @@ export default async function HomePage() {
     .sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned) || new Date(b.video_posted_at || b.created_at).getTime() - new Date(a.video_posted_at || a.created_at).getTime());
   const newest = [...products].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const trending = [...products].sort((a, b) => b.click_count - a.click_count);
-  const heroProducts = [...videoProducts, ...newest.filter((item) => !videoProducts.some((video) => video.id === item.id))].slice(0, 6);
+  const heroProducts = [...videoProducts, ...newest.filter((item) => !videoProducts.some((video) => video.id === item.id))].slice(0, 80);
 
   function SectionHead({ section, id }: { section: HomeSection; id?: string }) {
     return <div className="hs-section-head" id={id}>
