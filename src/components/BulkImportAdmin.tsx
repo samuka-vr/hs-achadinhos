@@ -383,7 +383,7 @@ export default function BulkImportAdmin() {
     {message ? <div className="admin-alert-v5 success">{message}</div> : null}
 
     <div className="bulk-import-steps" aria-label="Etapas da importação">
-      <span className={step === "paste" ? "active" : step !== "paste" ? "done" : ""}><b>1</b>Colar lista</span>
+      <span className={step === "paste" ? "active" : "done"}><b>1</b>Colar lista</span>
       <i />
       <span className={step === "review" ? "active" : step === "done" ? "done" : ""}><b>2</b>Revisar</span>
       <i />
