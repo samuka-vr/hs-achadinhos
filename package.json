@@ -1,6 +1,6 @@
 {
-  "name": "hs-achadinhos",
-  "version": "8.1.0",
+  "name": "hs-achadinhos-interface-definitiva",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

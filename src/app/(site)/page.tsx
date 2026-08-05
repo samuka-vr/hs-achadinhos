@@ -14,13 +14,29 @@ import { parseSettings, safeNumber } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 const fallbackSections: HomeSection[] = [
-  { id: "hero", section_key: "hero", section_type: "hero", title: "Achou no vídeo? Está aqui.", subtitle: "Pesquise pelo nome ou pelo código que apareceu no vídeo.", eyebrow: "LINK DA BIO", is_enabled: true, sort_order: 10, settings: { show_search: true, layout: "split", show_steps: false }, created_at: "", updated_at: "" },
-  { id: "categories", section_key: "categories", section_type: "categories", title: "Encontre por categoria", subtitle: "Um atalho para chegar mais rápido no que você procura.", eyebrow: "", is_enabled: true, sort_order: 20, settings: { limit: 12, style: "stories" }, created_at: "", updated_at: "" },
-  { id: "video", section_key: "video-products", section_type: "video_products", title: "Vistos nos últimos vídeos", subtitle: "Os produtos mais recentes aparecem primeiro.", eyebrow: "DOS VÍDEOS", is_enabled: true, sort_order: 30, settings: { limit: 12, layout: "rail" }, created_at: "", updated_at: "" },
-  { id: "newest", section_key: "newest", section_type: "newest", title: "Acabaram de chegar", subtitle: "Novos achadinhos adicionados ao catálogo.", eyebrow: "NOVIDADES", is_enabled: true, sort_order: 40, settings: { limit: 8, columns: 4 }, created_at: "", updated_at: "" },
-  { id: "trending", section_key: "trending", section_type: "trending", title: "Os mais procurados", subtitle: "Produtos que mais receberam acessos.", eyebrow: "EM ALTA", is_enabled: true, sort_order: 50, settings: { limit: 8, columns: 4 }, created_at: "", updated_at: "" },
-  { id: "catalog", section_key: "catalog", section_type: "catalog", title: "Todos os produtos", subtitle: "Busque, filtre e encontre seu próximo achadinho.", eyebrow: "CATÁLOGO", is_enabled: true, sort_order: 60, settings: { page_size: 24 }, created_at: "", updated_at: "" },
+  { id: "hero", section_key: "hero", section_type: "hero", title: "Viu no vídeo? Encontre aqui.", subtitle: "Busque pelo nome ou pelo código e chegue direto ao produto certo.", eyebrow: "H&S ACHADINHOS", is_enabled: true, sort_order: 10, settings: { show_search: true, layout: "split", show_steps: false }, created_at: "", updated_at: "" },
+  { id: "categories", section_key: "categories", section_type: "categories", title: "Escolha seu caminho", subtitle: "Sete categorias para encontrar mais rápido o que apareceu no vídeo.", eyebrow: "CATEGORIAS", is_enabled: true, sort_order: 20, settings: { limit: 7, style: "stories" }, created_at: "", updated_at: "" },
+  { id: "video", section_key: "video-products", section_type: "video_products", title: "Dos últimos vídeos", subtitle: "Os produtos mais recentes ficam sempre por perto.", eyebrow: "RECÉM-POSTADOS", is_enabled: true, sort_order: 30, settings: { limit: 12, layout: "rail" }, created_at: "", updated_at: "" },
+  { id: "newest", section_key: "newest", section_type: "newest", title: "Achados novos", subtitle: "Entraram agora no catálogo.", eyebrow: "NOVIDADES", is_enabled: true, sort_order: 40, settings: { limit: 8, columns: 4 }, created_at: "", updated_at: "" },
+  { id: "trending", section_key: "trending", section_type: "trending", title: "Mais procurados", subtitle: "Os links que mais receberam acessos.", eyebrow: "EM ALTA", is_enabled: true, sort_order: 50, settings: { limit: 8, columns: 4 }, created_at: "", updated_at: "" },
+  { id: "catalog", section_key: "catalog", section_type: "catalog", title: "Catálogo completo", subtitle: "Todos os achadinhos organizados em um só lugar.", eyebrow: "EXPLORE", is_enabled: true, sort_order: 60, settings: { page_size: 24 }, created_at: "", updated_at: "" },
 ];
+
+function SectionHead({ section, id, number }: { section: HomeSection; id?: string; number?: number }) {
+  return (
+    <div className="hs-section-head" id={id}>
+      <div className="hs-section-number">{String(number || 1).padStart(2, "0")}</div>
+      <div className="hs-section-title-block">
+        {section.eyebrow ? <span>{section.eyebrow}</span> : null}
+        <h2>{section.title}</h2>
+        {section.subtitle ? <p>{section.subtitle}</p> : null}
+      </div>
+      {["newest", "trending", "video_products"].includes(section.section_type) ? (
+        <Link href="#produtos">Ver catálogo <Icon name="arrow" size={16} /></Link>
+      ) : null}
+    </div>
+  );
+}
 
 export default async function HomePage() {
   const supabase = getServerSupabase();
@@ -52,55 +68,113 @@ export default async function HomePage() {
   const newest = [...products].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const trending = [...products].sort((a, b) => b.click_count - a.click_count);
   const heroProducts = [...videoProducts, ...newest.filter((item) => !videoProducts.some((video) => video.id === item.id))].slice(0, 80);
+  const enabledSections = sections.filter((section) => section.is_enabled).sort((a, b) => a.sort_order - b.sort_order);
 
-  function SectionHead({ section, id }: { section: HomeSection; id?: string }) {
-    return <div className="hs-section-head" id={id}>
-      <div>{section.eyebrow ? <span>{section.eyebrow}</span> : null}<h2>{section.title}</h2>{section.subtitle ? <p>{section.subtitle}</p> : null}</div>
-      {["newest", "trending", "video_products"].includes(section.section_type) ? <Link href="#produtos">Ver todos <Icon name="arrow" size={16} /></Link> : null}
-    </div>;
-  }
+  return (
+    <main className="hs-home">
+      <div className="hs-home-paper-grid" aria-hidden="true" />
+      <div className="hs-container">
+        {enabledSections.map((section, index) => {
+          if (section.section_type === "hero") {
+            return (
+              <section className={`hs-hero ${heroProducts.length ? "" : "is-empty"}`} key={section.id}>
+                <div className="hs-hero-copy">
+                  <div className="hs-hero-note"><span>Seu atalho dos vídeos para a Shopee</span><i /></div>
+                  <span className="hs-kicker"><Icon name="sparkles" size={14} />{section.eyebrow || "H&S ACHADINHOS"}</span>
+                  <h1>{section.title || settings.hero_title}</h1>
+                  <p>{section.subtitle || settings.hero_subtitle}</p>
+                  {Boolean(section.settings.show_search ?? true) ? <SearchBox variant="hero" /> : null}
+                  <div className="hs-hero-chips">
+                    <a href="#produtos-dos-videos"><span>01</span> Últimos vídeos</a>
+                    <a href="#categorias"><span>02</span> Categorias</a>
+                    <a href="#produtos"><span>03</span> Catálogo</a>
+                  </div>
+                  <div className="hs-hero-proof">
+                    <span><Icon name="search" size={15} /> Busque por código</span>
+                    <span><Icon name="products" size={15} /> Links organizados</span>
+                    <span><Icon name="external" size={15} /> Direto para a Shopee</span>
+                  </div>
+                </div>
+                <div className="hs-hero-stage">
+                  <div className="hs-hero-stage-label"><span>ACHADO EM DESTAQUE</span><b>Arraste para ver mais</b></div>
+                  <HeroProductCarousel products={heroProducts} interval={settings.carousel_speed} />
+                </div>
+              </section>
+            );
+          }
 
-  return <main className="hs-home"><div className="hs-container">
-    {sections.filter((section) => section.is_enabled).sort((a, b) => a.sort_order - b.sort_order).map((section) => {
-      if (section.section_type === "hero") return <section className={`hs-hero ${heroProducts.length ? "" : "is-empty"}`} key={section.id}>
-        <div className="hs-hero-copy">
-          <span className="hs-kicker"><Icon name="sparkles" size={14} />{section.eyebrow || "LINK DA BIO"}</span>
-          <h1>{section.title || settings.hero_title}</h1>
-          <p>{section.subtitle || settings.hero_subtitle}</p>
-          {Boolean(section.settings.show_search ?? true) ? <SearchBox variant="hero" /> : null}
-          <div className="hs-hero-chips"><a href="#produtos-dos-videos">Últimos vídeos</a><a href="#categorias">Categorias</a><a href="#produtos">Todos os produtos</a></div>
-        </div>
-        <HeroProductCarousel products={heroProducts} interval={settings.carousel_speed} />
-      </section>;
+          if (section.section_type === "banners") {
+            return banners.length ? (
+              <section className="hs-section hs-banner-section" key={section.id}>
+                <BannerCarousel banners={banners} autoplay={Boolean(section.settings.autoplay ?? true)} interval={safeNumber(section.settings.interval, 5000)} height={String(section.settings.height || "medium")} />
+              </section>
+            ) : null;
+          }
 
-      if (section.section_type === "banners") return banners.length ? <section className="hs-section hs-banner-section" key={section.id}><BannerCarousel banners={banners} autoplay={Boolean(section.settings.autoplay ?? true)} interval={safeNumber(section.settings.interval, 5000)} height={String(section.settings.height || "medium")} /></section> : null;
+          if (section.section_type === "categories") {
+            const limit = safeNumber(section.settings.limit, 7);
+            const variant = String(section.settings.style || "stories") === "cards" ? "cards" : "stories";
+            return categories.length ? (
+              <section className="hs-section hs-category-section" key={section.id}>
+                <SectionHead section={section} id="categorias" number={index + 1} />
+                <CategoryStories categories={categories.slice(0, limit)} variant={variant} />
+              </section>
+            ) : null;
+          }
 
-      if (section.section_type === "categories") {
-        const limit = safeNumber(section.settings.limit, 12);
-        const variant = String(section.settings.style || "stories") === "cards" ? "cards" : "stories";
-        return categories.length ? <section className="hs-section hs-category-section" key={section.id}><SectionHead section={section} id="categorias" /><CategoryStories categories={categories.slice(0, limit)} variant={variant} /></section> : null;
-      }
+          if (section.section_type === "video_products") {
+            const limit = safeNumber(section.settings.limit, 12);
+            const layout = String(section.settings.layout || "rail");
+            return videoProducts.length ? (
+              <section className="hs-section hs-products-section" id="produtos-dos-videos" key={section.id}>
+                <SectionHead section={section} number={index + 1} />
+                {layout === "grid" ? <ProductGrid products={videoProducts.slice(0, limit)} columns={safeNumber(section.settings.columns, 4)} /> : <ProductRail products={videoProducts.slice(0, limit)} autoplay={Boolean(section.settings.autoplay ?? true)} interval={safeNumber(section.settings.interval, settings.carousel_speed)} />}
+              </section>
+            ) : null;
+          }
 
-      if (section.section_type === "video_products") {
-        const limit = safeNumber(section.settings.limit, 12);
-        const layout = String(section.settings.layout || "rail");
-        return videoProducts.length ? <section className="hs-section" id="produtos-dos-videos" key={section.id}><SectionHead section={section} />{layout === "grid" ? <ProductGrid products={videoProducts.slice(0, limit)} columns={safeNumber(section.settings.columns, 4)} /> : <ProductRail products={videoProducts.slice(0, limit)} autoplay={Boolean(section.settings.autoplay ?? true)} interval={safeNumber(section.settings.interval, settings.carousel_speed)} />}</section> : null;
-      }
+          if (section.section_type === "newest") {
+            const limit = safeNumber(section.settings.limit, 8);
+            return newest.length ? (
+              <section className="hs-section" key={section.id}>
+                <SectionHead section={section} id="novidades" number={index + 1} />
+                <ProductGrid products={newest.slice(0, limit)} columns={safeNumber(section.settings.columns, 4)} />
+              </section>
+            ) : null;
+          }
 
-      if (section.section_type === "newest") {
-        const limit = safeNumber(section.settings.limit, 8);
-        return newest.length ? <section className="hs-section" key={section.id}><SectionHead section={section} id="novidades" /><ProductGrid products={newest.slice(0, limit)} columns={safeNumber(section.settings.columns, 4)} /></section> : null;
-      }
+          if (section.section_type === "trending") {
+            const limit = safeNumber(section.settings.limit, 8);
+            return trending.length ? (
+              <section className="hs-section" key={section.id}>
+                <SectionHead section={section} id="mais-acessados" number={index + 1} />
+                <ProductGrid products={trending.slice(0, limit)} columns={safeNumber(section.settings.columns, 4)} />
+              </section>
+            ) : null;
+          }
 
-      if (section.section_type === "trending") {
-        const limit = safeNumber(section.settings.limit, 8);
-        return trending.length ? <section className="hs-section" key={section.id}><SectionHead section={section} id="mais-acessados" /><ProductGrid products={trending.slice(0, limit)} columns={safeNumber(section.settings.columns, 4)} /></section> : null;
-      }
+          if (section.section_type === "catalog") {
+            return (
+              <section className="hs-section hs-catalog" id="produtos" key={section.id}>
+                <SectionHead section={section} number={index + 1} />
+                <ProductExplorer products={products} categories={categories} pageSize={safeNumber(section.settings.page_size, settings.products_per_page || 24)} showSearch={false} />
+              </section>
+            );
+          }
 
-      if (section.section_type === "catalog") return <section className="hs-section hs-catalog" id="produtos" key={section.id}><SectionHead section={section} /><ProductExplorer products={products} categories={categories} pageSize={safeNumber(section.settings.page_size, settings.products_per_page || 24)} showSearch={false} /></section>;
+          if (section.section_type === "custom_text") {
+            return (
+              <section className={`hs-section hs-custom-block align-${String(section.settings.alignment || "left")}`} key={section.id}>
+                <SectionHead section={section} number={index + 1} />
+                {section.settings.body ? <div>{String(section.settings.body)}</div> : null}
+                {section.settings.button_text ? <a className="hs-button" href={String(section.settings.button_url || "#produtos")}>{String(section.settings.button_text)}<Icon name="arrow" size={16} /></a> : null}
+              </section>
+            );
+          }
 
-      if (section.section_type === "custom_text") return <section className={`hs-section hs-custom-block align-${String(section.settings.alignment || "left")}`} key={section.id}><SectionHead section={section} />{section.settings.body ? <div>{String(section.settings.body)}</div> : null}{section.settings.button_text ? <a className="hs-button" href={String(section.settings.button_url || "#produtos")}>{String(section.settings.button_text)}<Icon name="arrow" size={16} /></a> : null}</section>;
-      return null;
-    })}
-  </div></main>;
+          return null;
+        })}
+      </div>
+    </main>
+  );
 }
