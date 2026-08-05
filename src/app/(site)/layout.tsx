@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import "./public-redesign.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageTracker from "@/components/PageTracker";
@@ -40,7 +41,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     "--shadow-alpha": settings.shadow_strength / 100,
   } as CSSProperties;
   const classes = [
-    "site-theme-v5 site-theme-v6",
+    "site-theme-v5 site-theme-v6 hs-public-v10",
     `card-style-${settings.card_style}`,
     settings.show_prices ? "show-prices" : "hide-prices",
     settings.show_product_codes ? "show-codes" : "hide-codes",

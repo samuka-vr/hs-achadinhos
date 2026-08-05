@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 import Icon from "./Icon";
+import SafeProductImage from "./SafeProductImage";
 
 function productPrice(product: Product) {
   const current = formatPrice(product.current_price);
@@ -23,14 +24,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <article className="hs-product-card">
       <Link className="hs-product-media" href={`/produto/${product.slug}`} aria-label={`Abrir ${product.name}`}>
-        {product.image_url ? (
-          <img src={product.image_url} alt={product.name} loading="lazy" />
-        ) : (
-          <div className="hs-product-placeholder">
-            <Icon name="image" size={30} />
-            <span>Imagem em breve</span>
-          </div>
-        )}
+        <SafeProductImage src={product.image_url} alt={product.name} />
         <div className="hs-product-badges">
           {product.is_video_product ? <span>Visto no vídeo</span> : product.badge ? <span>{product.badge}</span> : null}
           {product.is_pinned ? <b>Destaque</b> : null}
@@ -53,7 +47,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="hs-product-card-actions">
           <Link className="hs-product-details" href={`/produto/${product.slug}`}>Ver detalhes</Link>
           <a className="hs-product-cta" href={`/go/${product.id}`} target="_blank" rel="nofollow sponsored noopener" aria-label={`Ver ${product.name} na Shopee`}>
-            <span>Ir para a Shopee</span>
+            <span>Ver na Shopee</span>
             <Icon name="external" size={15} />
           </a>
         </div>
