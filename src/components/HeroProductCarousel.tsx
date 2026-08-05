@@ -18,17 +18,7 @@ import type { Product } from "@/lib/types";
 import { discountPercentage, formatPrice } from "@/lib/utils";
 import Icon from "./Icon";
 
-const SESSION_SEED_KEY = "hs-hero-carousel-seed-v1";
-const MAX_SLIDES = 8;
-
-function hashText(value: string) {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
+const MAX_SLIDES = 50;
 
 function seededRandom(seed: number) {
   let value = seed >>> 0;
@@ -41,8 +31,18 @@ function seededRandom(seed: number) {
   };
 }
 
-function shuffleProducts(items: Product[], seed: number) {
-  const random = seededRandom(seed);
+function shuffleProducts(items: Product[]) {
+  const cryptoSeed = (() => {
+    try {
+      const values = new Uint32Array(1);
+      window.crypto?.getRandomValues?.(values);
+      return values[0] || Date.now();
+    } catch {
+      return Date.now();
+    }
+  })();
+
+  const random = seededRandom(cryptoSeed);
   const result = [...items];
   for (let index = result.length - 1; index > 0; index -= 1) {
     const target = Math.floor(random() * (index + 1));
@@ -51,19 +51,33 @@ function shuffleProducts(items: Product[], seed: number) {
   return result;
 }
 
-function getSessionSeed() {
-  try {
-    const stored = window.sessionStorage.getItem(SESSION_SEED_KEY);
-    if (stored) return Number(stored) || 1;
+function ProductImage({ product, eager }: { product: Product; eager: boolean }) {
+  const [failed, setFailed] = useState(false);
+  const source = product.image_url?.trim() || "";
 
-    const values = new Uint32Array(1);
-    window.crypto?.getRandomValues?.(values);
-    const seed = values[0] || Date.now();
-    window.sessionStorage.setItem(SESSION_SEED_KEY, String(seed));
-    return seed;
-  } catch {
-    return Date.now();
+  useEffect(() => {
+    setFailed(false);
+  }, [source]);
+
+  if (!source || failed) {
+    return (
+      <span className="hs-hero-product-placeholder">
+        <span><Icon name="image" size={34} /></span>
+        <small>Imagem em breve</small>
+      </span>
+    );
   }
+
+  return (
+    <img
+      src={source}
+      alt={product.name}
+      draggable={false}
+      loading={eager ? "eager" : "lazy"}
+      decoding="async"
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 export default function HeroProductCarousel({
@@ -73,24 +87,19 @@ export default function HeroProductCarousel({
   products: Product[];
   interval?: number;
 }) {
-  const initialProducts = useMemo(() => {
-    const withImages = products.filter((product) => Boolean(product.image_url));
-    return (withImages.length ? withImages : products).slice(0, MAX_SLIDES);
-  }, [products]);
+  const initialProducts = useMemo(
+    () => products.slice(0, MAX_SLIDES),
+    [products],
+  );
 
   const [slides, setSlides] = useState<Product[]>(initialProducts);
   const [trackIndex, setTrackIndex] = useState(initialProducts.length > 1 ? 1 : 0);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const [interactionPaused, setInteractionPaused] = useState(false);
-  const [manualPaused, setManualPaused] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  const resumeTimerRef = useRef<number | null>(null);
   const pointerRef = useRef<{
     id: number;
     x: number;
@@ -106,10 +115,7 @@ export default function HeroProductCarousel({
   );
 
   useEffect(() => {
-    const withImages = products.filter((product) => Boolean(product.image_url));
-    const eligible = withImages.length ? withImages : products;
-    const seed = getSessionSeed() ^ hashText(productSignature);
-    const randomized = shuffleProducts(eligible, seed).slice(0, MAX_SLIDES);
+    const randomized = shuffleProducts(products).slice(0, MAX_SLIDES);
 
     setTransitionEnabled(false);
     setSlides(randomized);
@@ -137,10 +143,6 @@ export default function HeroProductCarousel({
     return () => media.removeEventListener?.("change", update);
   }, []);
 
-  useEffect(() => () => {
-    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-  }, []);
-
   const slideCount = slides.length;
   const activeIndex = slideCount > 1
     ? ((trackIndex - 1) % slideCount + slideCount) % slideCount
@@ -151,55 +153,29 @@ export default function HeroProductCarousel({
     return [slides[slides.length - 1], ...slides, slides[0]];
   }, [slides]);
 
-  const paused =
-    manualPaused ||
-    hovered ||
-    focused ||
-    interactionPaused ||
-    dragging ||
-    !pageVisible ||
-    reducedMotion ||
-    slideCount < 2;
-
-  const safeInterval = Math.max(3200, interval);
-
-  const pauseBriefly = useCallback((duration = 1600) => {
-    setInteractionPaused(true);
-    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-    resumeTimerRef.current = window.setTimeout(() => {
-      setInteractionPaused(false);
-      resumeTimerRef.current = null;
-    }, duration);
-  }, []);
+  const paused = dragging || !pageVisible || reducedMotion || slideCount < 2;
+  const safeInterval = Math.max(3600, interval);
 
   const previous = useCallback(() => {
     if (slideCount < 2) return;
     setTransitionEnabled(true);
     setTrackIndex((current) => current - 1);
-    pauseBriefly();
-  }, [pauseBriefly, slideCount]);
+  }, [slideCount]);
 
   const next = useCallback(() => {
     if (slideCount < 2) return;
     setTransitionEnabled(true);
     setTrackIndex((current) => current + 1);
-    pauseBriefly();
-  }, [pauseBriefly, slideCount]);
-
-  const select = useCallback((index: number) => {
-    if (slideCount < 2) return;
-    const normalized = (index + slideCount) % slideCount;
-    setTransitionEnabled(true);
-    setTrackIndex(normalized + 1);
-    pauseBriefly();
-  }, [pauseBriefly, slideCount]);
+  }, [slideCount]);
 
   useEffect(() => {
     if (paused) return;
+
     const timer = window.setTimeout(() => {
       setTransitionEnabled(true);
       setTrackIndex((current) => current + 1);
     }, safeInterval);
+
     return () => window.clearTimeout(timer);
   }, [paused, safeInterval, trackIndex]);
 
@@ -223,7 +199,7 @@ export default function HeroProductCarousel({
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
-    if (slideCount < 2 || event.pointerType === "mouse" && event.button !== 0) return;
+    if (slideCount < 2 || (event.pointerType === "mouse" && event.button !== 0)) return;
     if ((event.target as HTMLElement).closest(".hs-hero-carousel-controls")) return;
 
     pointerRef.current = {
@@ -235,7 +211,6 @@ export default function HeroProductCarousel({
     };
     didSwipeRef.current = false;
     setDragging(true);
-    setInteractionPaused(true);
     setTransitionEnabled(false);
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
@@ -251,8 +226,7 @@ export default function HeroProductCarousel({
       event.preventDefault();
       didSwipeRef.current = true;
       const width = event.currentTarget.getBoundingClientRect().width || 1;
-      const limited = Math.max(-width * 0.82, Math.min(width * 0.82, deltaX));
-      setDragOffset(limited);
+      setDragOffset(Math.max(-width * 0.85, Math.min(width * 0.85, deltaX)));
     }
   };
 
@@ -273,17 +247,12 @@ export default function HeroProductCarousel({
     setTransitionEnabled(true);
 
     if (shouldChange && didSwipeRef.current) {
-      if (deltaX < 0) {
-        setTrackIndex((current) => current + 1);
-      } else {
-        setTrackIndex((current) => current - 1);
-      }
+      setTrackIndex((current) => current + (deltaX < 0 ? 1 : -1));
     }
 
-    pauseBriefly(1900);
     window.setTimeout(() => {
       didSwipeRef.current = false;
-    }, 240);
+    }, 220);
 
     try {
       event.currentTarget.releasePointerCapture?.(event.pointerId);
@@ -316,12 +285,6 @@ export default function HeroProductCarousel({
       className={`hs-hero-carousel ${dragging ? "is-dragging" : ""}`}
       aria-roledescription="carrossel"
       aria-label="Produtos em destaque"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocusCapture={() => setFocused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
-      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={finishPointer}
@@ -354,11 +317,7 @@ export default function HeroProductCarousel({
                   tabIndex={isActive ? 0 : -1}
                   draggable={false}
                 >
-                  {product.image_url ? (
-                    <img src={product.image_url} alt={product.name} draggable={false} />
-                  ) : (
-                    <span className="hs-hero-product-placeholder"><Icon name="image" size={34} /></span>
-                  )}
+                  <ProductImage product={product} eager={isActive} />
                   <span className="hs-hero-product-label">{product.is_video_product ? "Visto no vídeo" : "Achadinho recente"}</span>
                   {discount ? <b className="hs-hero-product-discount">-{discount}%</b> : null}
                 </Link>
@@ -386,7 +345,7 @@ export default function HeroProductCarousel({
 
       {slideCount > 1 ? (
         <>
-          <div className="hs-hero-carousel-progress" aria-hidden="true" key={slides[activeIndex]?.id}>
+          <div className="hs-hero-carousel-progress" aria-hidden="true" key={`${slides[activeIndex]?.id}-${trackIndex}`}>
             <span
               className={paused ? "is-paused" : ""}
               style={{ animationDuration: `${safeInterval}ms` }}
@@ -395,27 +354,6 @@ export default function HeroProductCarousel({
 
           <div className="hs-hero-carousel-controls">
             <button type="button" onClick={previous} aria-label="Produto anterior"><Icon name="arrow" size={17} /></button>
-            <button
-              type="button"
-              className="hs-hero-autoplay-toggle"
-              onClick={() => setManualPaused((current) => !current)}
-              aria-label={manualPaused ? "Continuar reprodução automática" : "Pausar reprodução automática"}
-              aria-pressed={manualPaused}
-            >
-              <span className={manualPaused ? "is-play" : "is-pause"} />
-            </button>
-            <div className="hs-hero-carousel-dots" aria-label="Escolher produto">
-              {slides.map((product, index) => (
-                <button
-                  type="button"
-                  className={index === activeIndex ? "is-active" : ""}
-                  onClick={() => select(index)}
-                  aria-label={`Mostrar ${product.name}`}
-                  aria-current={index === activeIndex ? "true" : undefined}
-                  key={product.id}
-                />
-              ))}
-            </div>
             <span className="hs-hero-carousel-count" aria-live="polite">{activeIndex + 1}/{slideCount}</span>
             <button type="button" onClick={next} aria-label="Próximo produto"><Icon name="arrow" size={17} /></button>
           </div>
