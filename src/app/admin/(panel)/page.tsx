@@ -94,6 +94,7 @@ export default function AdminDashboardPage() {
         <header><div><span>ATALHOS</span><h2>O que deseja editar?</h2></div></header>
         <div>
           <Link href="/admin/produtos"><span><Icon name="products" /></span><div><strong>Produtos</strong><small>Links, imagens e códigos</small></div><Icon name="arrow" size={16} /></Link>
+          <Link href="/admin/produtos/importar"><span><Icon name="code" /></span><div><strong>Importar lista</strong><small>Cadastre vários produtos de uma vez</small></div><Icon name="arrow" size={16} /></Link>
           <Link href="/admin/editor"><span><Icon name="layout" /></span><div><strong>Página inicial</strong><small>Blocos, títulos e ordem</small></div><Icon name="arrow" size={16} /></Link>
           <Link href="/admin/aparencia"><span><Icon name="palette" /></span><div><strong>Identidade visual</strong><small>Cores, cards e tipografia</small></div><Icon name="arrow" size={16} /></Link>
           <Link href="/admin/navegacao"><span><Icon name="navigation" /></span><div><strong>Menus e redes</strong><small>Links do site e do footer</small></div><Icon name="arrow" size={16} /></Link>

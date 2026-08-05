@@ -11,6 +11,7 @@ type NavItem = { href: string; label: string; description: string; icon: IconNam
 const navItems: NavItem[] = [
   { href: "/admin", label: "Visão geral", description: "Resumo do site", icon: "home", group: "Inteligência" },
   { href: "/admin/produtos", label: "Produtos", description: "Catálogo e vídeos", icon: "products", group: "Catálogo" },
+  { href: "/admin/produtos/importar", label: "Importar produtos", description: "Colar lista em massa", icon: "code", group: "Catálogo" },
   { href: "/admin/categorias", label: "Categorias", description: "Organização visual", icon: "categories", group: "Catálogo" },
   { href: "/admin/banners", label: "Banners", description: "Campanhas", icon: "banner", group: "Catálogo" },
   { href: "/admin/midia", label: "Biblioteca", description: "Imagens do site", icon: "media", group: "Catálogo" },
@@ -53,12 +54,12 @@ export default function AdminShell({ children }: { children: ReactNode }) {
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
-  const activeItem = useMemo(() => navItems.find((item) => item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href)) || navItems[0], [pathname]);
+  const activeItem = useMemo(() => navItems.find((item) => pathname === item.href) || navItems.find((item) => item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href)) || navItems[0], [pathname]);
   const groups = ["Catálogo", "Experiência", "Inteligência"] as const;
-  const mobilePrimary = [navItems[0], navItems[1], navItems[2], navItems[5]];
+  const mobilePrimary = ["/admin", "/admin/produtos", "/admin/categorias", "/admin/editor"].map((href) => navItems.find((item) => item.href === href)!).filter(Boolean);
 
   async function logout() { const supabase = getBrowserSupabase(); await supabase?.auth.signOut(); router.replace("/admin/login"); }
-  function activeRoute(href: string) { return href === "/admin" ? pathname === href : pathname.startsWith(href); }
+  function activeRoute(href: string) { if (href === "/admin" || href === "/admin/produtos") return pathname === href; return pathname === href || pathname.startsWith(`${href}/`); }
 
   if (!ready) return <div className="studio-loading"><span className="studio-loading-mark">H&S</span><strong>Abrindo o Studio...</strong></div>;
   if (error) return <main className="page"><div className="container"><div className="error">{error}</div></div></main>;
