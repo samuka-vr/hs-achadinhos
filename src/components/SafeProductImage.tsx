@@ -15,13 +15,21 @@ export default function SafeProductImage({
   eager?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const source = src?.trim() || "";
 
-  useEffect(() => setFailed(false), [source]);
+  useEffect(() => {
+    setFailed(false);
+    setLoaded(false);
+  }, [source]);
 
   if (!source || failed) {
     return (
-      <span className={`hs-safe-image-fallback ${className || ""}`} role="img" aria-label={`${alt}: imagem em breve`}>
+      <span
+        className={`hs-safe-image-fallback ${className || ""}`}
+        role="img"
+        aria-label={`${alt}: imagem em breve`}
+      >
         <Icon name="image" size={28} />
         <small>Imagem em breve</small>
       </span>
@@ -30,11 +38,14 @@ export default function SafeProductImage({
 
   return (
     <img
-      className={className}
+      className={`hs-safe-image ${loaded ? "is-loaded" : "is-loading"} ${className || ""}`.trim()}
       src={source}
       alt={alt}
       loading={eager ? "eager" : "lazy"}
+      fetchPriority={eager ? "high" : "auto"}
       decoding="async"
+      draggable={false}
+      onLoad={() => setLoaded(true)}
       onError={() => setFailed(true)}
     />
   );
