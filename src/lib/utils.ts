@@ -59,6 +59,19 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   show_newest: true,
   show_catalog: true,
   carousel_speed: 5000,
+  maintenance_mode: false,
+  maintenance_title: "Estamos organizando novos achadinhos",
+  maintenance_message: "Voltamos em breve. Acompanhe nossas redes sociais para novidades.",
+  catalog_empty_title: "Nenhum produto encontrado",
+  catalog_empty_message: "Tente outra busca ou escolha uma categoria.",
+  footer_social_title: "Acompanhe a H&S",
+  footer_social_subtitle: "Novos achadinhos e vídeos nas nossas redes.",
+  admin_notes: "",
+  button_style: "rounded",
+  product_image_ratio: "square",
+  section_spacing: 72,
+  animations_enabled: true,
+  shadow_strength: 8,
 };
 
 export function formatPrice(value: number | null | undefined) {

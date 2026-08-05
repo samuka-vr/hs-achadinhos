@@ -15,7 +15,7 @@ export default function Footer({ settings }: { settings: SiteSettings; categorie
 
   return <footer className="hs-social-footer" aria-label="Redes sociais">
     <div className="hs-container hs-social-footer-inner">
-      <div className="hs-footer-social-title"><strong>Acompanhe nossos achadinhos</strong><span>Novidades e links nas redes</span></div>
+      <div className="hs-footer-social-title"><strong>{settings.footer_social_title || "Acompanhe nossos achadinhos"}</strong><span>{settings.footer_social_subtitle || "Novidades e links nas redes"}</span></div>
       <nav aria-label="Links das redes sociais">
         {active.length ? active.map(([name, url, label]) => (
           <a href={url} target="_blank" rel="noreferrer" key={name} aria-label={label}><Icon name={name} /><span>{label}</span></a>

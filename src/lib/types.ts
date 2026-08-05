@@ -42,6 +42,10 @@ export type Product = {
   sort_order: number;
   seo_title: string | null;
   seo_description: string | null;
+  internal_notes?: string | null;
+  publish_at?: string | null;
+  unpublish_at?: string | null;
+  import_source?: string | null;
   is_active: boolean;
   click_count: number;
   created_at: string;
@@ -109,6 +113,19 @@ export type SiteSettings = {
   show_newest: boolean;
   show_catalog: boolean;
   carousel_speed: number;
+  maintenance_mode: boolean;
+  maintenance_title: string;
+  maintenance_message: string;
+  catalog_empty_title: string;
+  catalog_empty_message: string;
+  footer_social_title: string;
+  footer_social_subtitle: string;
+  admin_notes: string;
+  button_style: "rounded" | "pill" | "square";
+  product_image_ratio: "square" | "portrait" | "landscape";
+  section_spacing: number;
+  animations_enabled: boolean;
+  shadow_strength: number;
 };
 
 export type HomeSection = {
@@ -190,4 +207,34 @@ export type ContentPage = {
   sort_order: number;
   created_at: string;
   updated_at: string;
+};
+
+
+export type CategoryAlias = {
+  id: string;
+  alias: string;
+  normalized_alias: string;
+  category_id: string;
+  created_at: string;
+  updated_at: string;
+  categories?: Pick<Category, "id" | "name" | "slug"> | null;
+};
+
+export type AdminActivity = {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  summary: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
+export type SiteSnapshot = {
+  id: string;
+  name: string;
+  snapshot: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
 };
