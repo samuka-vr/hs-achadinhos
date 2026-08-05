@@ -5,3 +5,8 @@ node_modules
 .vercel
 *.log
 .DS_Store
+*.zip
+.next/
+node_modules/
+tsconfig.tsbuildinfo
+.vercel/
