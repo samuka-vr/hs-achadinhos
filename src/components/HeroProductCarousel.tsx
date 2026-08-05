@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type {
+  CSSProperties,
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   TransitionEvent as ReactTransitionEvent,
@@ -18,10 +19,13 @@ import { getProductPriceDisplay } from "@/lib/utils";
 import Icon from "./Icon";
 import SafeProductImage from "./SafeProductImage";
 
-const PAUSE_AFTER_INTERACTION = 4600;
-const SWIPE_DISTANCE_RATIO = 0.16;
-const SWIPE_MIN_DISTANCE = 48;
-const SWIPE_MIN_VELOCITY = 0.34;
+const CARD_GAP = 14;
+const PAUSE_AFTER_INTERACTION = 4800;
+const SWIPE_DISTANCE_RATIO = 0.18;
+const SWIPE_MIN_DISTANCE = 52;
+const SWIPE_MIN_VELOCITY = 0.42;
+
+type CarouselPhase = "idle" | "dragging" | "settling";
 
 type DragState = {
   pointerId: number;
@@ -29,13 +33,20 @@ type DragState = {
   startY: number;
   lastX: number;
   lastTime: number;
+  velocityX: number;
   axis: "x" | "y" | null;
   moved: boolean;
 };
 
+type SlideSlot = -1 | 0 | 1;
+
 function normalizeIndex(index: number, length: number) {
   if (!length) return 0;
   return ((index % length) + length) % length;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 export default function HeroProductCarousel({
@@ -50,27 +61,26 @@ export default function HeroProductCarousel({
     [products],
   );
 
-  const displaySlides = useMemo(() => {
-    if (slides.length <= 1) return slides;
-    return [slides[slides.length - 1], ...slides, slides[0]];
-  }, [slides]);
-
   const viewportRef = useRef<HTMLDivElement>(null);
   const resumeTimerRef = useRef<number | null>(null);
   const autoplayTimerRef = useRef<number | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const suppressClickRef = useRef(false);
 
-  const [index, setIndex] = useState(0);
-  const [position, setPosition] = useState(slides.length > 1 ? 1 : 0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [phase, setPhase] = useState<CarouselPhase>("idle");
   const [dragOffset, setDragOffset] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const [transitionEnabled, setTransitionEnabled] = useState(true);
-  const [transitioning, setTransitioning] = useState(false);
+  const [settleDirection, setSettleDirection] = useState<-1 | 0 | 1>(0);
+  const [viewportWidth, setViewportWidth] = useState(360);
   const [paused, setPaused] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
+
+  const distance = Math.max(1, viewportWidth + CARD_GAP);
+  const effectiveOffset =
+    phase === "settling" && settleDirection !== 0
+      ? -settleDirection * distance
+      : dragOffset;
 
   const scheduleResume = useCallback(() => {
     setPaused(true);
@@ -81,44 +91,43 @@ export default function HeroProductCarousel({
     );
   }, []);
 
-  const jumpWithoutAnimation = useCallback((nextPosition: number) => {
-    setTransitionEnabled(false);
-    setPosition(nextPosition);
-    setDragOffset(0);
-
-    if (animationFrameRef.current) {
-      window.cancelAnimationFrame(animationFrameRef.current);
-    }
-
-    animationFrameRef.current = window.requestAnimationFrame(() => {
-      animationFrameRef.current = window.requestAnimationFrame(() => {
-        setTransitionEnabled(true);
-      });
-    });
-  }, []);
-
-  const moveBy = useCallback(
-    (direction: -1 | 1) => {
-      if (slides.length < 2 || dragging || transitioning) return;
-      setTransitionEnabled(true);
-      setTransitioning(true);
+  const settleTo = useCallback(
+    (direction: -1 | 1, pauseForInteraction = true) => {
+      if (slides.length < 2 || phase === "settling") return;
+      if (pauseForInteraction) scheduleResume();
+      setSettleDirection(direction);
+      setPhase("settling");
       setDragOffset(0);
-      setPosition((current) => current + direction);
-      setIndex((current) => normalizeIndex(current + direction, slides.length));
     },
-    [dragging, slides.length, transitioning],
+    [phase, scheduleResume, slides.length],
   );
 
   useEffect(() => {
-    setIndex(0);
+    setActiveIndex(0);
+    setPhase("idle");
     setDragOffset(0);
-    setTransitioning(false);
-    setTransitionEnabled(false);
-    setPosition(slides.length > 1 ? 1 : 0);
-
-    const frame = window.requestAnimationFrame(() => setTransitionEnabled(true));
-    return () => window.cancelAnimationFrame(frame);
+    setSettleDirection(0);
   }, [slides.length]);
+
+  useEffect(() => {
+    const node = viewportRef.current;
+    if (!node) return;
+
+    const syncSize = () => {
+      const nextWidth = Math.max(1, Math.round(node.getBoundingClientRect().width));
+      setViewportWidth(nextWidth);
+    };
+
+    syncSize();
+    const observer = new ResizeObserver(syncSize);
+    observer.observe(node);
+    window.addEventListener("orientationchange", syncSize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("orientationchange", syncSize);
+    };
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -140,11 +149,11 @@ export default function HeroProductCarousel({
   useEffect(() => {
     if (!slides.length) return;
 
-    const candidates = [-1, 0, 1, 2]
-      .map((offset) => slides[normalizeIndex(index + offset, slides.length)]?.image_url?.trim())
+    const sources = [-2, -1, 0, 1, 2]
+      .map((offset) => slides[normalizeIndex(activeIndex + offset, slides.length)]?.image_url?.trim())
       .filter((source): source is string => Boolean(source));
 
-    const preloaders = candidates.map((source) => {
+    const preloaders = [...new Set(sources)].map((source) => {
       const image = new window.Image();
       image.decoding = "async";
       image.src = source;
@@ -158,7 +167,7 @@ export default function HeroProductCarousel({
         image.onerror = null;
       });
     };
-  }, [index, slides]);
+  }, [activeIndex, slides]);
 
   useEffect(() => {
     if (autoplayTimerRef.current) {
@@ -169,15 +178,14 @@ export default function HeroProductCarousel({
       paused ||
       reducedMotion ||
       !pageVisible ||
-      dragging ||
-      transitioning ||
+      phase !== "idle" ||
       slides.length < 2
     ) {
       return;
     }
 
     autoplayTimerRef.current = window.setTimeout(
-      () => moveBy(1),
+      () => settleTo(1, false),
       Math.max(4000, interval),
     );
 
@@ -186,21 +194,18 @@ export default function HeroProductCarousel({
         window.clearTimeout(autoplayTimerRef.current);
       }
     };
-  }, [dragging, interval, moveBy, pageVisible, paused, reducedMotion, slides.length, transitioning]);
+  }, [interval, pageVisible, paused, phase, reducedMotion, settleTo, slides.length]);
 
   useEffect(
     () => () => {
       if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
       if (autoplayTimerRef.current) window.clearTimeout(autoplayTimerRef.current);
-      if (animationFrameRef.current) {
-        window.cancelAnimationFrame(animationFrameRef.current);
-      }
     },
     [],
   );
 
   function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (slides.length < 2) return;
+    if (slides.length < 2 || phase === "settling") return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
 
     scheduleResume();
@@ -211,13 +216,14 @@ export default function HeroProductCarousel({
       startY: event.clientY,
       lastX: event.clientX,
       lastTime: performance.now(),
+      velocityX: 0,
       axis: null,
       moved: false,
     };
 
-    setDragging(true);
-    setTransitionEnabled(false);
-    setTransitioning(false);
+    setPhase("dragging");
+    setSettleDirection(0);
+    setDragOffset(0);
     event.currentTarget.setPointerCapture?.(event.pointerId);
   }
 
@@ -229,22 +235,26 @@ export default function HeroProductCarousel({
     const deltaY = event.clientY - drag.startY;
 
     if (!drag.axis && Math.max(Math.abs(deltaX), Math.abs(deltaY)) > 7) {
-      drag.axis = Math.abs(deltaX) > Math.abs(deltaY) * 1.08 ? "x" : "y";
+      drag.axis = Math.abs(deltaX) > Math.abs(deltaY) * 1.12 ? "x" : "y";
     }
 
+    if (drag.axis === "y") return;
     if (drag.axis !== "x") return;
 
     event.preventDefault();
+
+    const now = performance.now();
+    const elapsed = Math.max(1, now - drag.lastTime);
+    drag.velocityX = (event.clientX - drag.lastX) / elapsed;
     drag.lastX = event.clientX;
-    drag.lastTime = performance.now();
+    drag.lastTime = now;
 
     if (Math.abs(deltaX) > 8) {
       drag.moved = true;
       suppressClickRef.current = true;
     }
 
-    const viewportWidth = Math.max(1, viewportRef.current?.clientWidth || 1);
-    const resistance = Math.max(-viewportWidth, Math.min(viewportWidth, deltaX));
+    const resistance = clamp(deltaX, -distance * 0.98, distance * 0.98);
     setDragOffset(resistance);
   }
 
@@ -253,46 +263,45 @@ export default function HeroProductCarousel({
     if (!drag || drag.pointerId !== event.pointerId) return;
 
     dragRef.current = null;
-    setDragging(false);
     event.currentTarget.releasePointerCapture?.(event.pointerId);
 
     if (drag.axis !== "x") {
-      setTransitionEnabled(true);
+      setPhase("idle");
       setDragOffset(0);
       return;
     }
 
-    const viewportWidth = Math.max(1, viewportRef.current?.clientWidth || 1);
-    const distance = event.clientX - drag.startX;
-    const elapsed = Math.max(1, performance.now() - drag.lastTime);
-    const finalStep = event.clientX - drag.lastX;
-    const velocity = Math.abs(finalStep / elapsed);
+    const distanceMoved = event.clientX - drag.startX;
     const threshold = Math.max(SWIPE_MIN_DISTANCE, viewportWidth * SWIPE_DISTANCE_RATIO);
-    const shouldChange = Math.abs(distance) >= threshold || velocity >= SWIPE_MIN_VELOCITY;
+    const shouldChange =
+      Math.abs(distanceMoved) >= threshold ||
+      Math.abs(drag.velocityX) >= SWIPE_MIN_VELOCITY;
 
-    setTransitionEnabled(true);
-    setDragOffset(0);
-
-    if (!shouldChange) return;
-
-    setTransitioning(true);
-    const direction: -1 | 1 = distance < 0 ? 1 : -1;
-    setPosition((current) => current + direction);
-    setIndex((current) => normalizeIndex(current + direction, slides.length));
-  }
-
-  function onTransitionEnd(event: ReactTransitionEvent<HTMLDivElement>) {
-    if (event.target !== event.currentTarget || event.propertyName !== "transform") return;
-    setTransitioning(false);
-
-    if (slides.length <= 1) return;
-    if (position === 0) {
-      jumpWithoutAnimation(slides.length);
+    if (!shouldChange) {
+      setSettleDirection(0);
+      setPhase("settling");
+      setDragOffset(0);
       return;
     }
-    if (position === slides.length + 1) {
-      jumpWithoutAnimation(1);
+
+    const direction: -1 | 1 = distanceMoved < 0 ? 1 : -1;
+    setSettleDirection(direction);
+    setPhase("settling");
+    setDragOffset(0);
+  }
+
+  function onCurrentTransitionEnd(event: ReactTransitionEvent<HTMLElement>) {
+    if (event.propertyName !== "transform" || phase !== "settling") return;
+
+    if (settleDirection !== 0) {
+      setActiveIndex((current) =>
+        normalizeIndex(current + settleDirection, slides.length),
+      );
     }
+
+    setSettleDirection(0);
+    setDragOffset(0);
+    setPhase("idle");
   }
 
   function preventClick(event: ReactMouseEvent<HTMLDivElement>) {
@@ -302,11 +311,21 @@ export default function HeroProductCarousel({
     suppressClickRef.current = false;
   }
 
-  function getOriginalIndex(displayIndex: number) {
-    if (slides.length <= 1) return displayIndex;
-    if (displayIndex === 0) return slides.length - 1;
-    if (displayIndex === displaySlides.length - 1) return 0;
-    return displayIndex - 1;
+  function getSlideStyle(slot: SlideSlot): CSSProperties {
+    const normalizedProgress = effectiveOffset / distance;
+    const visualPosition = slot + normalizedProgress;
+    const absolutePosition = Math.abs(visualPosition);
+    const scale = 1 - Math.min(absolutePosition * 0.045, 0.07);
+    const opacity = 1 - Math.min(absolutePosition * 0.2, 0.38);
+    const translatePercent = slot * 100;
+    const translatePixels = slot * CARD_GAP + effectiveOffset;
+
+    return {
+      zIndex: Math.max(1, 10 - Math.round(absolutePosition * 4)),
+      opacity,
+      transform: `translate3d(calc(${translatePercent}% + ${translatePixels}px), 0, 0) scale(${scale})`,
+      pointerEvents: slot === 0 && phase !== "settling" ? "auto" : "none",
+    };
   }
 
   if (!slides.length) {
@@ -319,25 +338,11 @@ export default function HeroProductCarousel({
     );
   }
 
-  const displayCount = Math.max(1, displaySlides.length);
-  const translatePercent = -(position * (100 / displayCount));
-  const trackStyle = {
-    width: `${displayCount * 100}%`,
-    transform: `translate3d(calc(${translatePercent}% + ${dragOffset}px), 0, 0)`,
-    transition:
-      transitionEnabled && !dragging && !reducedMotion
-        ? "transform 460ms cubic-bezier(0.22, 0.78, 0.22, 1)"
-        : "none",
-  };
-  const slideStyle = {
-    flexBasis: `${100 / displayCount}%`,
-    width: `${100 / displayCount}%`,
-    maxWidth: `${100 / displayCount}%`,
-  };
+  const slots: SlideSlot[] = slides.length > 1 ? [-1, 0, 1] : [0];
 
   return (
     <section
-      className={`hs-spotlight ${dragging ? "is-dragging" : ""}`}
+      className={`hs-spotlight is-${phase}`}
       aria-roledescription="carrossel"
       aria-label="Produtos em destaque"
       onMouseEnter={() => setPaused(true)}
@@ -354,40 +359,34 @@ export default function HeroProductCarousel({
         onPointerCancel={finishPointerDrag}
         onClickCapture={preventClick}
       >
-        <div
-          className="hs-spotlight__track"
-          style={trackStyle}
-          onTransitionEnd={onTransitionEnd}
-        >
-          {displaySlides.map((product, displayIndex) => {
-            const originalIndex = getOriginalIndex(displayIndex);
-            const isCurrentProduct = originalIndex === index;
-            const isActive = displayIndex === position;
-            const previousIndex = normalizeIndex(index - 1, slides.length);
-            const nextIndex = normalizeIndex(index + 1, slides.length);
-            const shouldEagerLoad =
-              isCurrentProduct || originalIndex === previousIndex || originalIndex === nextIndex;
+        <div className="hs-spotlight__stage">
+          {slots.map((slot) => {
+            const productIndex = normalizeIndex(activeIndex + slot, slides.length);
+            const product = slides[productIndex];
             const price = getProductPriceDisplay(product);
+            const isCurrent = slot === 0;
+            const key = slides.length === 2 ? `${product.id}-${slot}` : product.id;
 
             return (
               <article
-                className="hs-spotlight__slide"
-                key={`${product.id}-${displayIndex}`}
-                aria-hidden={!isActive}
-                style={slideStyle}
+                key={key}
+                className={`hs-spotlight__slide ${isCurrent ? "is-current" : ""}`}
+                style={getSlideStyle(slot)}
+                aria-hidden={!isCurrent}
+                onTransitionEnd={isCurrent ? onCurrentTransitionEnd : undefined}
               >
                 <div className="hs-spotlight__card">
                   <Link
                     href={`/produto/${product.slug}`}
                     className="hs-spotlight__media"
                     aria-label={`Abrir ${product.name}`}
-                    tabIndex={isActive ? 0 : -1}
+                    tabIndex={isCurrent && phase !== "settling" ? 0 : -1}
                     draggable={false}
                   >
                     <SafeProductImage
                       src={product.image_url}
                       alt={product.name}
-                      eager={shouldEagerLoad}
+                      eager
                     />
                     <span>
                       {product.is_video_product ? "Visto no vídeo" : "Achado em destaque"}
@@ -407,7 +406,7 @@ export default function HeroProductCarousel({
                     <div className="hs-spotlight__actions">
                       <Link
                         href={`/produto/${product.slug}`}
-                        tabIndex={isActive ? 0 : -1}
+                        tabIndex={isCurrent && phase !== "settling" ? 0 : -1}
                         draggable={false}
                       >
                         Ver detalhes
@@ -416,7 +415,7 @@ export default function HeroProductCarousel({
                         href={`/go/${product.id}`}
                         target="_blank"
                         rel="nofollow sponsored noopener"
-                        tabIndex={isActive ? 0 : -1}
+                        tabIndex={isCurrent && phase !== "settling" ? 0 : -1}
                         draggable={false}
                       >
                         Abrir na Shopee <Icon name="external" size={16} />
@@ -434,28 +433,24 @@ export default function HeroProductCarousel({
         <div className="hs-spotlight__controls">
           <button
             type="button"
-            onClick={() => {
-              scheduleResume();
-              moveBy(-1);
-            }}
+            onClick={() => settleTo(-1)}
+            disabled={phase === "settling"}
             aria-label="Produto anterior"
           >
             <Icon name="arrow" />
           </button>
 
           <div className="hs-spotlight__progress">
-            <span style={{ width: `${((index + 1) / slides.length) * 100}%` }} />
+            <span style={{ width: `${((activeIndex + 1) / slides.length) * 100}%` }} />
             <small>
-              {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+              {String(activeIndex + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
             </small>
           </div>
 
           <button
             type="button"
-            onClick={() => {
-              scheduleResume();
-              moveBy(1);
-            }}
+            onClick={() => settleTo(1)}
+            disabled={phase === "settling"}
             aria-label="Próximo produto"
           >
             <Icon name="arrow" />
