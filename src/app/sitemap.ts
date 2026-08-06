@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
     { url: base, changeFrequency: "daily", priority: 1 },
     { url: `${base}/busca`, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${base}/catalogo`, changeFrequency: "daily", priority: 0.9 },
   ];
   if (!supabase) return entries;
 

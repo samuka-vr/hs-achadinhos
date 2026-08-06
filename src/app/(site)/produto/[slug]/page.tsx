@@ -6,7 +6,7 @@ import ProductGrid from "@/components/ProductGrid";
 import ProductGallery from "@/components/ProductGallery";
 import ShareButton from "@/components/ShareButton";
 import { getServerSupabase } from "@/lib/supabase/server";
-import type { Product } from "@/lib/types";
+import { normalizeProduct, normalizeProducts, PUBLIC_PRODUCT_DETAIL_SELECT, PUBLIC_PRODUCT_SELECT } from "@/lib/catalog";
 import { getProductPriceDisplay } from "@/lib/utils";
 import { isSafePublicUrl, safePublicHref } from "@/lib/security";
 
@@ -28,11 +28,11 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const supabase = getServerSupabase();
   if (!supabase) notFound();
-  const { data } = await supabase.from("products").select("*,categories(id,name,slug),product_images(*)").eq("slug", slug).eq("is_active", true).maybeSingle();
+  const { data } = await supabase.from("products").select(PUBLIC_PRODUCT_DETAIL_SELECT).eq("slug", slug).eq("is_active", true).maybeSingle();
   if (!data) notFound();
-  const product = data as Product;
-  const relatedResult = await supabase.from("products").select("*,categories(id,name,slug)").eq("is_active", true).eq("category_id", product.category_id).neq("id", product.id).limit(8);
-  const related = (relatedResult.data ?? []) as Product[];
+  const product = normalizeProduct(data);
+  const relatedResult = await supabase.from("products").select(PUBLIC_PRODUCT_SELECT).eq("is_active", true).eq("category_id", product.category_id).neq("id", product.id).limit(8);
+  const related = normalizeProducts(relatedResult.data);
   const price = getProductPriceDisplay(product);
 
   return <main className="hs-inner-page hs-product-page"><div className="hs-shell">

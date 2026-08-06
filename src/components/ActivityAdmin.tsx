@@ -35,11 +35,11 @@ export default function ActivityAdmin() {
   if (loading) return <div className="studio-inline-loading"><span /><strong>Carregando histórico...</strong></div>;
 
   return <>
-    <div className="admin-page-heading-v5"><div><span>SEGURANÇA</span><h1>Histórico de alterações</h1><p>Acompanhe o que foi criado, alterado ou excluído pelo painel.</p></div></div>
-    {error ? <div className="admin-alert-v5 error">{error}</div> : null}
-    <section className="admin-card-v5 activity-admin-v8">
-      <div className="activity-toolbar-v8"><label><Icon name="search" size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar no histórico" /></label><select value={type} onChange={(event) => setType(event.target.value)}><option value="all">Todas as áreas</option>{types.map((item) => <option key={item} value={item}>{entityLabels[item] || item}</option>)}</select><span>{visible.length} registro(s)</span></div>
-      <div className="activity-list-v8">{visible.map((item) => <article key={item.id}><span className={`activity-icon-v8 ${item.action}`}><Icon name={item.action === "delete" ? "trash" : item.action === "insert" ? "plus" : item.action === "reset" ? "shield" : "edit"} size={17} /></span><div><strong>{item.summary || entityLabels[item.entity_type] || item.entity_type}</strong><small>{actionLabels[item.action] || item.action} em {entityLabels[item.entity_type] || item.entity_type}</small></div><time>{new Date(item.created_at).toLocaleString("pt-BR")}</time></article>)}{!visible.length ? <div className="studio-empty-mini">Nenhuma alteração encontrada.</div> : null}</div>
+    <div className="admin-page-heading-ui"><div><span>SEGURANÇA</span><h1>Histórico de alterações</h1><p>Acompanhe o que foi criado, alterado ou excluído pelo painel.</p></div></div>
+    {error ? <div className="admin-alert-ui error">{error}</div> : null}
+    <section className="admin-card-ui activity-admin-ops">
+      <div className="activity-toolbar-ops"><label><Icon name="search" size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar no histórico" /></label><select value={type} onChange={(event) => setType(event.target.value)}><option value="all">Todas as áreas</option>{types.map((item) => <option key={item} value={item}>{entityLabels[item] || item}</option>)}</select><span>{visible.length} registro(s)</span></div>
+      <div className="activity-list-ops">{visible.map((item) => <article key={item.id}><span className={`activity-icon-ops ${item.action}`}><Icon name={item.action === "delete" ? "trash" : item.action === "insert" ? "plus" : item.action === "reset" ? "shield" : "edit"} size={17} /></span><div><strong>{item.summary || entityLabels[item.entity_type] || item.entity_type}</strong><small>{actionLabels[item.action] || item.action} em {entityLabels[item.entity_type] || item.entity_type}</small></div><time>{new Date(item.created_at).toLocaleString("pt-BR")}</time></article>)}{!visible.length ? <div className="studio-empty-mini">Nenhuma alteração encontrada.</div> : null}</div>
     </section>
   </>;
 }

@@ -18,7 +18,7 @@ export default function Header({ settings, categories, navigation }: { settings:
             <span className="hs-brand__text"><strong>{settings.site_name}</strong><small>{settings.header_tagline || "Achou no vídeo. Encontrou aqui."}</small></span>
           </Link>
           <nav className="hs-header__nav" aria-label="Navegação principal">
-            {items.length ? items.map((item) => <Link href={safePublicHref(item.url, "/")} key={item.id} target={item.open_new_tab ? "_blank" : undefined} rel={item.open_new_tab ? "noopener noreferrer" : undefined}>{item.label}</Link>) : <><Link href="/#produtos-dos-videos">Dos vídeos</Link><Link href="/#categorias">Categorias</Link><Link href="/#produtos">Catálogo</Link></>}
+            {items.length ? items.map((item) => <Link href={safePublicHref(item.url, "/")} key={item.id} target={item.open_new_tab ? "_blank" : undefined} rel={item.open_new_tab ? "noopener noreferrer" : undefined}>{item.label}</Link>) : <><Link href="/#produtos-dos-videos">Dos vídeos</Link><Link href="/#categorias">Categorias</Link><Link href="/catalogo">Catálogo</Link></>}
           </nav>
           <div className="hs-header__actions">
             {settings.show_header_search ? <Link href="/busca" className="hs-header__search"><Icon name="search" size={18} /><span>Buscar</span></Link> : null}

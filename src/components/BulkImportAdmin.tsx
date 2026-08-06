@@ -489,13 +489,13 @@ export default function BulkImportAdmin() {
   }
 
   return <>
-    <div className="admin-page-heading-v5 bulk-import-heading">
+    <div className="admin-page-heading-ui bulk-import-heading">
       <div><span>CATÁLOGO</span><h1>Importar em massa</h1><p>Cole uma lista pronta e transforme cada bloco em um produto. As imagens podem ser adicionadas depois.</p></div>
-      <Link className="admin-button-v5 secondary" href="/admin/produtos"><Icon name="products"/>Ver produtos</Link>
+      <Link className="admin-button-ui secondary" href="/admin/produtos"><Icon name="products"/>Ver produtos</Link>
     </div>
 
-    {error ? <div className="admin-alert-v5 error">{error}</div> : null}
-    {message ? <div className="admin-alert-v5 success">{message}</div> : null}
+    {error ? <div className="admin-alert-ui error">{error}</div> : null}
+    {message ? <div className="admin-alert-ui success">{message}</div> : null}
 
     <div className="bulk-import-steps" aria-label="Etapas da importação">
       <span className={step === "paste" ? "active" : "done"}><b>1</b>Colar lista</span>
@@ -505,7 +505,7 @@ export default function BulkImportAdmin() {
       <span className={step === "done" ? "active" : ""}><b>3</b>Concluir</span>
     </div>
 
-    {step === "paste" ? <section className="admin-card-v5 bulk-paste-card">
+    {step === "paste" ? <section className="admin-card-ui bulk-paste-card">
       <div className="bulk-card-title"><div><small>ENTRADA</small><h2>Cole os produtos</h2><p>O importador reconhece os campos e agrupa cada item automaticamente em uma das 7 categorias principais.</p></div><button type="button" className="text-button" onClick={() => setRawText(EXAMPLE)}>Usar exemplo</button></div>
       <textarea
         className="bulk-import-textarea"
@@ -514,7 +514,7 @@ export default function BulkImportAdmin() {
         placeholder={EXAMPLE}
         spellCheck={false}
       />
-      <div className="bulk-paste-footer"><span><Icon name="shield" size={18}/>Nada é salvo antes da revisão.</span><button className="admin-button-v5" onClick={() => void analyze()} disabled={loading || !rawText.trim()}><Icon name="sparkles"/>{loading ? "Analisando..." : "Analisar produtos"}</button></div>
+      <div className="bulk-paste-footer"><span><Icon name="shield" size={18}/>Nada é salvo antes da revisão.</span><button className="admin-button-ui" onClick={() => void analyze()} disabled={loading || !rawText.trim()}><Icon name="sparkles"/>{loading ? "Analisando..." : "Analisar produtos"}</button></div>
     </section> : null}
 
     {step === "review" ? <>
@@ -526,7 +526,7 @@ export default function BulkImportAdmin() {
         <article><span>Categorias novas</span><strong>{missingCategories.length}</strong></article>
       </section>
 
-      <section className="admin-card-v5 bulk-options-card">
+      <section className="admin-card-ui bulk-options-card">
         <div><small>COMO IMPORTAR</small><h2>Configurações</h2></div>
         <div className="bulk-option bulk-option-static"><Icon name="categories"/><span><strong>Agrupamento automático ativo</strong><small>A categoria informada será guardada como referência, mas o produto entrará em uma das 7 categorias principais.</small></span></div>
         <div className="bulk-mode-picker"><span><strong>Status dos novos produtos</strong><small>Como ainda não têm imagem, recomendamos rascunho.</small></span><div><button className={mode === "draft" ? "active" : ""} onClick={() => setMode("draft")}>Rascunho</button><button className={mode === "published" ? "active" : ""} onClick={() => setMode("published")}>Publicado</button></div></div>
@@ -554,16 +554,16 @@ export default function BulkImportAdmin() {
         </article>)}
       </section>
 
-      <div className="bulk-import-actions"><button className="admin-button-v5 secondary" onClick={() => setStep("paste")}>Voltar e editar texto</button><div><span>{ready.length} produto(s) pronto(s)</span><button className="admin-button-v5" disabled={importing || !ready.length} onClick={() => void runImport()}><Icon name="save"/>{importing ? `Importando ${progress.current}/${progress.total}` : "Importar produtos"}</button></div></div>
+      <div className="bulk-import-actions"><button className="admin-button-ui secondary" onClick={() => setStep("paste")}>Voltar e editar texto</button><div><span>{ready.length} produto(s) pronto(s)</span><button className="admin-button-ui" disabled={importing || !ready.length} onClick={() => void runImport()}><Icon name="save"/>{importing ? `Importando ${progress.current}/${progress.total}` : "Importar produtos"}</button></div></div>
       {importing ? <div className="bulk-progress"><div style={{ width: `${progress.total ? (progress.current / progress.total) * 100 : 0}%` }}/><span>{progress.label}</span></div> : null}
     </> : null}
 
-    {step === "done" && summary ? <section className="admin-card-v5 bulk-done-card">
+    {step === "done" && summary ? <section className="admin-card-ui bulk-done-card">
       <span className="bulk-done-icon"><Icon name="check" size={34}/></span>
       <small>IMPORTAÇÃO CONCLUÍDA</small><h1>Produtos processados</h1><p>Agora você pode adicionar as imagens e publicar os itens que ficaram como rascunho.</p>
       <div className="bulk-done-grid"><article><strong>{summary.inserted}</strong><span>Adicionados</span></article><article><strong>{summary.updated}</strong><span>Atualizados</span></article><article><strong>{summary.skipped}</strong><span>Ignorados</span></article><article><strong>{summary.categoriesCreated}</strong><span>Categorias criadas</span></article><article><strong>{summary.failed}</strong><span>Com erro</span></article></div>
       {summary.failures.length ? <div className="bulk-failure-list"><strong>Itens que precisam de atenção</strong>{summary.failures.map((failure) => <p key={failure}>{failure}</p>)}</div> : null}
-      <div className="bulk-done-actions"><Link className="admin-button-v5" href="/admin/produtos"><Icon name="image"/>Adicionar imagens</Link><button className="admin-button-v5 secondary" onClick={reset}><Icon name="plus"/>Nova importação</button></div>
+      <div className="bulk-done-actions"><Link className="admin-button-ui" href="/admin/produtos"><Icon name="image"/>Adicionar imagens</Link><button className="admin-button-ui secondary" onClick={reset}><Icon name="plus"/>Nova importação</button></div>
     </section> : null}
   </>;
 }

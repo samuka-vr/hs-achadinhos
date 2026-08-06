@@ -61,20 +61,20 @@ export default function CategoryAliasesAdmin({ categories: initialCategories }: 
     if (deleteError) setError(deleteError.message); else { setMessage("Nome alternativo removido."); await load(); }
   }
 
-  return <section className="admin-card-v5 alias-manager-v8">
-    <div className="admin-card-head-v5">
+  return <section className="admin-card-ui alias-manager-ops">
+    <div className="admin-card-head-ui">
       <div><small>IMPORTADOR</small><h2>Nomes alternativos</h2><p>Defina como categorias detalhadas da sua lista serão agrupadas nas categorias principais.</p></div>
       <span className="studio-count-badge">{aliases.length}</span>
     </div>
-    {error ? <div className="admin-alert-v5 error">{error}</div> : null}
-    {message ? <div className="admin-alert-v5 success">{message}</div> : null}
-    <form onSubmit={addAlias} className="alias-create-v8">
+    {error ? <div className="admin-alert-ui error">{error}</div> : null}
+    {message ? <div className="admin-alert-ui success">{message}</div> : null}
+    <form onSubmit={addAlias} className="alias-create-ops">
       <label><span>Nome recebido na lista</span><input value={alias} onChange={(event) => setAlias(event.target.value)} placeholder="Ex.: Eletrônicos e Áudio" /></label>
       <label><span>Categoria principal</span><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-      <button className="admin-button-v5" disabled={saving || !alias.trim() || !categoryId}><Icon name="plus" />{saving ? "Adicionando..." : "Adicionar"}</button>
+      <button className="admin-button-ui" disabled={saving || !alias.trim() || !categoryId}><Icon name="plus" />{saving ? "Adicionando..." : "Adicionar"}</button>
     </form>
-    <div className="alias-toolbar-v8"><label><Icon name="search" size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar nome ou categoria" /></label><small>{visible.length} resultado(s)</small></div>
-    <div className="alias-list-v8">
+    <div className="alias-toolbar-ops"><label><Icon name="search" size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar nome ou categoria" /></label><small>{visible.length} resultado(s)</small></div>
+    <div className="alias-list-ops">
       {visible.map((item) => <article key={item.id}>
         <div><strong>{item.alias}</strong><small>Quando aparecer no importador</small></div>
         <Icon name="arrow" size={16} />

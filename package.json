@@ -1,6 +1,6 @@
 {
-  "name": "hs-achadinhos-orbita",
-  "version": "14.2.0",
+  "name": "hs-achadinhos-final",
+  "version": "1.0.0",
   "private": true,
   "engines": {
     "node": ">=20.9.0"
@@ -11,7 +11,10 @@
     "start": "next start",
     "lint": "node scripts/check-source.mjs",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck && npm run build"
+    "check": "npm run lint && npm run audit:project && npm run test && npm run typecheck && npm run build",
+    "test": "node --test tests/*.test.mjs",
+    "audit:project": "node scripts/project-audit.mjs",
+    "audit:deps": "npm audit --omit=dev"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.57.4",

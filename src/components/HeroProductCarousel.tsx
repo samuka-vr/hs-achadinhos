@@ -4,46 +4,27 @@ import Link from "next/link";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import type {
-  CSSProperties,
-  MouseEvent as ReactMouseEvent,
-  PointerEvent as ReactPointerEvent,
-  TransitionEvent as ReactTransitionEvent,
-} from "react";
 import type { Product } from "@/lib/types";
 import { getProductPriceDisplay } from "@/lib/utils";
 import Icon from "./Icon";
-import SafeProductImage from "./SafeProductImage";
+import SafeProductImage, { preloadProductImage } from "./SafeProductImage";
 
-const CARD_GAP = 14;
-const PAUSE_AFTER_INTERACTION = 4800;
-const SWIPE_DISTANCE_RATIO = 0.18;
-const SWIPE_MIN_DISTANCE = 52;
-const SWIPE_MIN_VELOCITY = 0.42;
+const MIN_AUTOPLAY_INTERVAL = 4200;
+const RESUME_DELAY = 4200;
+const SCROLL_SETTLE_DELAY = 140;
+const MAX_FEATURED_PRODUCTS = 12;
 
-type CarouselPhase = "idle" | "dragging" | "settling";
-
-type DragState = {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  lastX: number;
-  lastTime: number;
-  velocityX: number;
-  axis: "x" | "y" | null;
-  moved: boolean;
+type RenderedSlide = {
+  product: Product;
+  realIndex: number;
+  clone: "start" | "end" | null;
+  key: string;
 };
-
-type SlideSlot = -1 | 0 | 1;
-
-function normalizeIndex(index: number, length: number) {
-  if (!length) return 0;
-  return ((index % length) + length) % length;
-}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -57,83 +38,142 @@ export default function HeroProductCarousel({
   interval?: number;
 }) {
   const slides = useMemo(
-    () => products.filter((item) => Boolean(item.image_url?.trim())).slice(0, 40),
+    () =>
+      products
+        .filter((product) => Boolean(product.image_url?.trim()))
+        .slice(0, MAX_FEATURED_PRODUCTS),
     [products],
   );
 
+  const renderedSlides = useMemo<RenderedSlide[]>(() => {
+    if (slides.length < 2) {
+      return slides.map((product, realIndex) => ({
+        product,
+        realIndex,
+        clone: null,
+        key: product.id,
+      }));
+    }
+
+    const first = slides[0];
+    const last = slides[slides.length - 1];
+    return [
+      { product: last, realIndex: slides.length - 1, clone: "start", key: `${last.id}-clone-start` },
+      ...slides.map((product, realIndex) => ({ product, realIndex, clone: null, key: product.id })),
+      { product: first, realIndex: 0, clone: "end", key: `${first.id}-clone-end` },
+    ];
+  }, [slides]);
+
+  const rootRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const resumeTimerRef = useRef<number | null>(null);
+  const virtualIndexRef = useRef(slides.length > 1 ? 1 : 0);
+  const scrollTimerRef = useRef<number | null>(null);
   const autoplayTimerRef = useRef<number | null>(null);
-  const dragRef = useRef<DragState | null>(null);
+  const resumeTimerRef = useRef<number | null>(null);
+  const isPointerDownRef = useRef(false);
   const suppressClickRef = useRef(false);
+  const pointerStartRef = useRef({ x: 0, y: 0 });
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const [phase, setPhase] = useState<CarouselPhase>("idle");
-  const [dragOffset, setDragOffset] = useState(0);
-  const [settleDirection, setSettleDirection] = useState<-1 | 0 | 1>(0);
-  const [viewportWidth, setViewportWidth] = useState(360);
+  const [virtualIndex, setVirtualIndex] = useState(slides.length > 1 ? 1 : 0);
   const [paused, setPaused] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
+  const [inViewport, setInViewport] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  const distance = Math.max(1, viewportWidth + CARD_GAP);
-  const effectiveOffset =
-    phase === "settling" && settleDirection !== 0
-      ? -settleDirection * distance
-      : dragOffset;
-
-  const scheduleResume = useCallback(() => {
-    setPaused(true);
-    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-    resumeTimerRef.current = window.setTimeout(
-      () => setPaused(false),
-      PAUSE_AFTER_INTERACTION,
-    );
+  const getStep = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return 1;
+    const firstSlide = viewport.querySelector<HTMLElement>("[data-carousel-slide]");
+    const styles = window.getComputedStyle(viewport);
+    const gap = Number.parseFloat(styles.columnGap || styles.gap || "0") || 0;
+    return Math.max(1, (firstSlide?.offsetWidth || viewport.clientWidth) + gap);
   }, []);
 
-  const settleTo = useCallback(
-    (direction: -1 | 1, pauseForInteraction = true) => {
-      if (slides.length < 2 || phase === "settling") return;
-      if (pauseForInteraction) scheduleResume();
-      setSettleDirection(direction);
-      setPhase("settling");
-      setDragOffset(0);
+  const updateActiveFromVirtual = useCallback(
+    (virtualIndex: number) => {
+      if (!slides.length) return;
+      let realIndex = virtualIndex;
+      if (slides.length > 1) {
+        if (virtualIndex <= 0) realIndex = slides.length - 1;
+        else if (virtualIndex >= slides.length + 1) realIndex = 0;
+        else realIndex = virtualIndex - 1;
+      }
+      setActiveIndex(clamp(realIndex, 0, slides.length - 1));
     },
-    [phase, scheduleResume, slides.length],
+    [slides.length],
   );
 
-  useEffect(() => {
-    setActiveIndex(0);
-    setPhase("idle");
-    setDragOffset(0);
-    setSettleDirection(0);
-  }, [slides.length]);
+  const jumpToVirtual = useCallback(
+    (virtualIndex: number) => {
+      const viewport = viewportRef.current;
+      if (!viewport) return;
+      virtualIndexRef.current = virtualIndex;
+      setVirtualIndex(virtualIndex);
+      viewport.scrollTo({ left: virtualIndex * getStep(), behavior: "auto" });
+      updateActiveFromVirtual(virtualIndex);
+    },
+    [getStep, updateActiveFromVirtual],
+  );
 
-  useEffect(() => {
-    const node = viewportRef.current;
-    if (!node) return;
+  const settleLoopBoundary = useCallback(() => {
+    if (slides.length < 2) return;
+    const current = virtualIndexRef.current;
+    if (current === 0) jumpToVirtual(slides.length);
+    if (current === slides.length + 1) jumpToVirtual(1);
+  }, [jumpToVirtual, slides.length]);
 
-    const syncSize = () => {
-      const nextWidth = Math.max(1, Math.round(node.getBoundingClientRect().width));
-      setViewportWidth(nextWidth);
-    };
-
-    syncSize();
-    const observer = new ResizeObserver(syncSize);
-    observer.observe(node);
-    window.addEventListener("orientationchange", syncSize);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("orientationchange", syncSize);
-    };
+  const pauseTemporarily = useCallback(() => {
+    setPaused(true);
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = window.setTimeout(() => setPaused(false), RESUME_DELAY);
   }, []);
+
+  const goToVirtual = useCallback(
+    (target: number, userInitiated = true) => {
+      const viewport = viewportRef.current;
+      if (!viewport || slides.length < 2) return;
+      if (userInitiated) pauseTemporarily();
+      virtualIndexRef.current = clamp(target, 0, slides.length + 1);
+      setVirtualIndex(virtualIndexRef.current);
+      updateActiveFromVirtual(virtualIndexRef.current);
+      viewport.scrollTo({
+        left: virtualIndexRef.current * getStep(),
+        behavior: reducedMotion ? "auto" : "smooth",
+      });
+    },
+    [getStep, pauseTemporarily, reducedMotion, slides.length, updateActiveFromVirtual],
+  );
+
+  const move = useCallback(
+    (direction: -1 | 1, userInitiated = true) => {
+      goToVirtual(virtualIndexRef.current + direction, userInitiated);
+    },
+    [goToVirtual],
+  );
+
+  useLayoutEffect(() => {
+    virtualIndexRef.current = slides.length > 1 ? 1 : 0;
+    setActiveIndex(0);
+    setVirtualIndex(slides.length > 1 ? 1 : 0);
+    const frame = window.requestAnimationFrame(() => jumpToVirtual(virtualIndexRef.current));
+    return () => window.cancelAnimationFrame(frame);
+  }, [jumpToVirtual, slides.length]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    if (typeof ResizeObserver === "undefined") return;
+    const resize = new ResizeObserver(() => jumpToVirtual(virtualIndexRef.current));
+    resize.observe(viewport);
+    return () => resize.disconnect();
+  }, [jumpToVirtual]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const syncMotion = () => setReducedMotion(media.matches);
-    const syncVisibility = () =>
-      setPageVisible(document.visibilityState === "visible");
+    const syncVisibility = () => setPageVisible(document.visibilityState === "visible");
 
     syncMotion();
     syncVisibility();
@@ -147,185 +187,98 @@ export default function HeroProductCarousel({
   }, []);
 
   useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInViewport(entry.isIntersecting && entry.intersectionRatio >= 0.35),
+      { threshold: [0, 0.35, 0.7] },
+    );
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (!slides.length) return;
-
-    const sources = [-2, -1, 0, 1, 2]
-      .map((offset) => slides[normalizeIndex(activeIndex + offset, slides.length)]?.image_url?.trim())
-      .filter((source): source is string => Boolean(source));
-
-    const preloaders = [...new Set(sources)].map((source) => {
-      const image = new window.Image();
-      image.decoding = "async";
-      image.src = source;
-      void image.decode?.().catch(() => undefined);
-      return image;
+    const indexes = [activeIndex - 1, activeIndex, activeIndex + 1]
+      .map((index) => (index + slides.length) % slides.length);
+    indexes.forEach((index) => {
+      void preloadProductImage(slides[index]?.image_url);
     });
-
-    return () => {
-      preloaders.forEach((image) => {
-        image.onload = null;
-        image.onerror = null;
-      });
-    };
   }, [activeIndex, slides]);
 
   useEffect(() => {
-    if (autoplayTimerRef.current) {
-      window.clearTimeout(autoplayTimerRef.current);
-    }
-
+    if (autoplayTimerRef.current) window.clearTimeout(autoplayTimerRef.current);
     if (
       paused ||
       reducedMotion ||
       !pageVisible ||
-      phase !== "idle" ||
+      !inViewport ||
+      isPointerDownRef.current ||
       slides.length < 2
     ) {
       return;
     }
 
     autoplayTimerRef.current = window.setTimeout(
-      () => settleTo(1, false),
-      Math.max(4000, interval),
+      () => move(1, false),
+      Math.max(MIN_AUTOPLAY_INTERVAL, interval),
     );
 
     return () => {
-      if (autoplayTimerRef.current) {
-        window.clearTimeout(autoplayTimerRef.current);
-      }
+      if (autoplayTimerRef.current) window.clearTimeout(autoplayTimerRef.current);
     };
-  }, [interval, pageVisible, paused, phase, reducedMotion, settleTo, slides.length]);
+  }, [activeIndex, inViewport, interval, move, pageVisible, paused, reducedMotion, slides.length]);
 
   useEffect(
     () => () => {
-      if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+      if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
       if (autoplayTimerRef.current) window.clearTimeout(autoplayTimerRef.current);
+      if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
     },
     [],
   );
 
-  function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (slides.length < 2 || phase === "settling") return;
+  function handleScroll() {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const nearest = clamp(
+      Math.round(viewport.scrollLeft / getStep()),
+      0,
+      Math.max(0, renderedSlides.length - 1),
+    );
+    virtualIndexRef.current = nearest;
+    setVirtualIndex(nearest);
+    updateActiveFromVirtual(nearest);
+
+    if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = window.setTimeout(settleLoopBoundary, SCROLL_SETTLE_DELAY);
+  }
+
+  function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.pointerType === "mouse" && event.button !== 0) return;
-
-    scheduleResume();
+    isPointerDownRef.current = true;
     suppressClickRef.current = false;
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      lastX: event.clientX,
-      lastTime: performance.now(),
-      velocityX: 0,
-      axis: null,
-      moved: false,
-    };
-
-    setPhase("dragging");
-    setSettleDirection(0);
-    setDragOffset(0);
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+    setPaused(true);
   }
 
-  function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-
-    if (!drag.axis && Math.max(Math.abs(deltaX), Math.abs(deltaY)) > 7) {
-      drag.axis = Math.abs(deltaX) > Math.abs(deltaY) * 1.12 ? "x" : "y";
-    }
-
-    if (drag.axis === "y") return;
-    if (drag.axis !== "x") return;
-
-    event.preventDefault();
-
-    const now = performance.now();
-    const elapsed = Math.max(1, now - drag.lastTime);
-    drag.velocityX = (event.clientX - drag.lastX) / elapsed;
-    drag.lastX = event.clientX;
-    drag.lastTime = now;
-
-    if (Math.abs(deltaX) > 8) {
-      drag.moved = true;
-      suppressClickRef.current = true;
-    }
-
-    const resistance = clamp(deltaX, -distance * 0.98, distance * 0.98);
-    setDragOffset(resistance);
+  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    if (!isPointerDownRef.current) return;
+    const movedX = Math.abs(event.clientX - pointerStartRef.current.x);
+    const movedY = Math.abs(event.clientY - pointerStartRef.current.y);
+    if (movedX > 8 && movedX > movedY) suppressClickRef.current = true;
   }
 
-  function finishPointerDrag(event: ReactPointerEvent<HTMLDivElement>) {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-
-    dragRef.current = null;
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-
-    if (drag.axis !== "x") {
-      setPhase("idle");
-      setDragOffset(0);
-      return;
-    }
-
-    const distanceMoved = event.clientX - drag.startX;
-    const threshold = Math.max(SWIPE_MIN_DISTANCE, viewportWidth * SWIPE_DISTANCE_RATIO);
-    const shouldChange =
-      Math.abs(distanceMoved) >= threshold ||
-      Math.abs(drag.velocityX) >= SWIPE_MIN_VELOCITY;
-
-    if (!shouldChange) {
-      setSettleDirection(0);
-      setPhase("settling");
-      setDragOffset(0);
-      return;
-    }
-
-    const direction: -1 | 1 = distanceMoved < 0 ? 1 : -1;
-    setSettleDirection(direction);
-    setPhase("settling");
-    setDragOffset(0);
+  function handlePointerEnd() {
+    isPointerDownRef.current = false;
+    pauseTemporarily();
   }
 
-  function onCurrentTransitionEnd(event: ReactTransitionEvent<HTMLElement>) {
-    if (event.propertyName !== "transform" || phase !== "settling") return;
-
-    if (settleDirection !== 0) {
-      setActiveIndex((current) =>
-        normalizeIndex(current + settleDirection, slides.length),
-      );
-    }
-
-    setSettleDirection(0);
-    setDragOffset(0);
-    setPhase("idle");
-  }
-
-  function preventClick(event: ReactMouseEvent<HTMLDivElement>) {
+  function preventAccidentalClick(event: React.MouseEvent<HTMLDivElement>) {
     if (!suppressClickRef.current) return;
     event.preventDefault();
     event.stopPropagation();
     suppressClickRef.current = false;
-  }
-
-  function getSlideStyle(slot: SlideSlot): CSSProperties {
-    const normalizedProgress = effectiveOffset / distance;
-    const visualPosition = slot + normalizedProgress;
-    const absolutePosition = Math.abs(visualPosition);
-    const scale = 1 - Math.min(absolutePosition * 0.045, 0.07);
-    const opacity = 1 - Math.min(absolutePosition * 0.2, 0.38);
-    const translatePercent = slot * 100;
-    const translatePixels = slot * CARD_GAP + effectiveOffset;
-
-    return {
-      zIndex: Math.max(1, 10 - Math.round(absolutePosition * 4)),
-      opacity,
-      transform: `translate3d(calc(${translatePercent}% + ${translatePixels}px), 0, 0) scale(${scale})`,
-      pointerEvents: slot === 0 && phase !== "settling" ? "auto" : "none",
-    };
   }
 
   if (!slides.length) {
@@ -338,125 +291,98 @@ export default function HeroProductCarousel({
     );
   }
 
-  const slots: SlideSlot[] = slides.length > 1 ? [-1, 0, 1] : [0];
-
   return (
     <section
-      className={`hs-spotlight is-${phase}`}
+      ref={rootRef}
+      className="hs-spotlight"
       aria-roledescription="carrossel"
       aria-label="Produtos em destaque"
       onMouseEnter={() => setPaused(true)}
-      onMouseLeave={scheduleResume}
+      onMouseLeave={pauseTemporarily}
       onFocusCapture={() => setPaused(true)}
-      onBlurCapture={scheduleResume}
+      onBlurCapture={pauseTemporarily}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowLeft") move(-1);
+        if (event.key === "ArrowRight") move(1);
+      }}
     >
       <div
         ref={viewportRef}
         className="hs-spotlight__viewport"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={finishPointerDrag}
-        onPointerCancel={finishPointerDrag}
-        onClickCapture={preventClick}
+        onScroll={handleScroll}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onClickCapture={preventAccidentalClick}
       >
-        <div className="hs-spotlight__stage">
-          {slots.map((slot) => {
-            const productIndex = normalizeIndex(activeIndex + slot, slides.length);
-            const product = slides[productIndex];
-            const price = getProductPriceDisplay(product);
-            const isCurrent = slot === 0;
-            const key = slides.length === 2 ? `${product.id}-${slot}` : product.id;
+        {renderedSlides.map(({ product, realIndex, clone, key }, renderedIndex) => {
+          const price = getProductPriceDisplay(product);
+          const isActive = renderedIndex === virtualIndex;
+          return (
+            <article
+              data-carousel-slide
+              className={`hs-spotlight__slide ${isActive ? "is-active" : ""}`}
+              key={key}
+              aria-hidden={clone ? true : undefined}
+            >
+              <div className="hs-spotlight__card">
+                <Link
+                  href={`/produto/${product.slug}`}
+                  className="hs-spotlight__media"
+                  aria-label={`Abrir ${product.name}`}
+                  draggable={false}
+                  tabIndex={isActive && !clone ? 0 : -1}
+                >
+                  <SafeProductImage
+                    src={product.image_url}
+                    alt={product.name}
+                    eager={realIndex === activeIndex || Math.abs(realIndex - activeIndex) === 1}
+                    fade={false}
+                    sizes="(max-width: 760px) calc(100vw - 60px), 520px"
+                  />
+                  <span>{product.is_video_product ? "Visto no vídeo" : "Achado em destaque"}</span>
+                </Link>
 
-            return (
-              <article
-                key={key}
-                className={`hs-spotlight__slide ${isCurrent ? "is-current" : ""}`}
-                style={getSlideStyle(slot)}
-                aria-hidden={!isCurrent}
-                onTransitionEnd={isCurrent ? onCurrentTransitionEnd : undefined}
-              >
-                <div className="hs-spotlight__card">
-                  <Link
-                    href={`/produto/${product.slug}`}
-                    className="hs-spotlight__media"
-                    aria-label={`Abrir ${product.name}`}
-                    tabIndex={isCurrent && phase !== "settling" ? 0 : -1}
-                    draggable={false}
-                  >
-                    <SafeProductImage
-                      src={product.image_url}
-                      alt={product.name}
-                      eager
-                    />
-                    <span>
-                      {product.is_video_product ? "Visto no vídeo" : "Achado em destaque"}
-                    </span>
-                  </Link>
-
-                  <div className="hs-spotlight__content">
-                    <div className="hs-spotlight__meta">
-                      <span>{product.categories?.name || "Achadinho"}</span>
-                      {product.product_code ? <b>{product.product_code}</b> : null}
-                    </div>
-                    <h2>{product.name}</h2>
-                    <div className="hs-spotlight__price">
-                      <strong>{price.main}</strong>
-                      {price.secondary ? <del>{price.secondary}</del> : null}
-                    </div>
-                    <div className="hs-spotlight__actions">
-                      <Link
-                        href={`/produto/${product.slug}`}
-                        tabIndex={isCurrent && phase !== "settling" ? 0 : -1}
-                        draggable={false}
-                      >
-                        Ver detalhes
-                      </Link>
-                      <a
-                        href={`/go/${product.id}`}
-                        target="_blank"
-                        rel="nofollow sponsored noopener"
-                        tabIndex={isCurrent && phase !== "settling" ? 0 : -1}
-                        draggable={false}
-                      >
-                        Abrir na Shopee <Icon name="external" size={16} />
-                      </a>
-                    </div>
+                <div className="hs-spotlight__content">
+                  <div className="hs-spotlight__meta">
+                    <span>{product.categories?.name || "Achadinho"}</span>
+                    {product.product_code ? <b>{product.product_code}</b> : null}
+                  </div>
+                  <h2>{product.name}</h2>
+                  <div className={`hs-spotlight__price is-${price.mode}`}>
+                    <strong>{price.main}</strong>
+                    {price.secondary ? <del>{price.secondary}</del> : null}
+                  </div>
+                  <div className="hs-spotlight__actions">
+                    <Link href={`/produto/${product.slug}`} tabIndex={isActive && !clone ? 0 : -1}>Ver detalhes</Link>
+                    <a
+                      href={`/go/${product.id}`}
+                      target="_blank"
+                      rel="nofollow sponsored noopener"
+                      tabIndex={isActive && !clone ? 0 : -1}
+                    >
+                      Abrir na Shopee <Icon name="external" size={16} />
+                    </a>
                   </div>
                 </div>
-              </article>
-            );
-          })}
-        </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       {slides.length > 1 ? (
         <div className="hs-spotlight__controls">
-          <button
-            type="button"
-            onClick={() => settleTo(-1)}
-            disabled={phase === "settling"}
-            aria-label="Produto anterior"
-          >
-            <Icon name="arrow" />
-          </button>
-
-          <div className="hs-spotlight__progress">
+          <button type="button" onClick={() => move(-1)} aria-label="Produto anterior"><Icon name="arrow" /></button>
+          <div className="hs-spotlight__progress" aria-hidden="true">
             <span style={{ width: `${((activeIndex + 1) / slides.length) * 100}%` }} />
-            <small>
-              {String(activeIndex + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
-            </small>
+            <small>{String(activeIndex + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}</small>
           </div>
-
-          <button
-            type="button"
-            onClick={() => settleTo(1)}
-            disabled={phase === "settling"}
-            aria-label="Próximo produto"
-          >
-            <Icon name="arrow" />
-          </button>
+          <button type="button" onClick={() => move(1)} aria-label="Próximo produto"><Icon name="arrow" /></button>
         </div>
       ) : null}
+      <p className="sr-only" aria-live="polite">Produto {activeIndex + 1} de {slides.length}: {slides[activeIndex]?.name}</p>
     </section>
   );
 }

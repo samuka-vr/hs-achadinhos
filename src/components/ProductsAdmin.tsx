@@ -577,29 +577,29 @@ export default function ProductsAdmin() {
 
   return (
     <>
-      <div className="admin-page-heading-v5 products-page-heading-v9">
+      <div className="admin-page-heading-ui products-page-heading-catalog">
         <div>
           <span>CATÁLOGO</span>
           <h1>Produtos</h1>
           <p>Edite nomes completos, fotos, preços e publicação com uma experiência melhor no celular.</p>
         </div>
         <div className="product-heading-actions">
-          <Link className="admin-button-v5 secondary" href="/admin/produtos/importar">
+          <Link className="admin-button-ui secondary" href="/admin/produtos/importar">
             <Icon name="code" /> Importar lista
           </Link>
-          <button className="admin-button-v5" onClick={openNew}>
+          <button className="admin-button-ui" onClick={openNew}>
             <Icon name="plus" /> Novo produto
           </button>
         </div>
       </div>
 
-      {error ? <div className="admin-alert-v5 error">{error}</div> : null}
-      {message ? <div className="admin-alert-v5 success">{message}</div> : null}
+      {error ? <div className="admin-alert-ui error">{error}</div> : null}
+      {message ? <div className="admin-alert-ui success">{message}</div> : null}
 
       {showForm ? (
-        <section className="product-editor-shell-v9">
-          <form onSubmit={save} className="product-editor-v5 product-editor-v9">
-            <div className="product-editor-top-v5 product-editor-top-v9">
+        <section className="product-editor-shell-catalog">
+          <form onSubmit={save} className="product-editor-ui product-editor-catalog">
+            <div className="product-editor-top-ui product-editor-top-catalog">
               <div>
                 <small>{editingId ? "EDITANDO PRODUTO" : "NOVO PRODUTO"}</small>
                 <h2>{form.name || (editingId ? "Editar produto" : "Cadastrar produto")}</h2>
@@ -617,7 +617,7 @@ export default function ProductsAdmin() {
               </div>
             </div>
 
-            <div className="product-editor-tabs-v5 product-editor-tabs-v9">
+            <div className="product-editor-tabs-ui product-editor-tabs-catalog">
               {tabs.map(([key, label, icon]) => (
                 <button key={key} type="button" className={tab === key ? "active" : ""} onClick={() => setTab(key)}>
                   <Icon name={icon} /> {label}
@@ -625,9 +625,9 @@ export default function ProductsAdmin() {
               ))}
             </div>
 
-            <div className="product-editor-body-v5 product-editor-body-v9">
+            <div className="product-editor-body-ui product-editor-body-catalog">
               {tab === "basic" ? (
-                <div className="admin-form-grid-v5 product-form-grid-v9">
+                <div className="admin-form-grid-ui product-form-grid-catalog">
                   <label className="full">
                     <span>Nome completo do produto</span>
                     <textarea
@@ -691,33 +691,33 @@ export default function ProductsAdmin() {
               ) : null}
 
               {tab === "media" ? (
-                <div className="media-editor-v5 media-editor-v9">
-                  <div className="cover-editor-v5 cover-editor-v9">
-                    <div className={`cover-preview-v5 cover-preview-v9 ${coverPreview ? "has-image" : ""}`}>
+                <div className="media-editor-ui media-editor-catalog">
+                  <div className="cover-editor-ui cover-editor-catalog">
+                    <div className={`cover-preview-ui cover-preview-catalog ${coverPreview ? "has-image" : ""}`}>
                       {coverPreview ? <img src={coverPreview} alt="Prévia da capa" /> : <span><Icon name="image" size={34} />Sem capa</span>}
                     </div>
-                    <div className="cover-controls-v9">
+                    <div className="cover-controls-catalog">
                       <div>
                         <h3>Imagem principal</h3>
                         <p>Você pode escolher da galeria ou abrir a câmera do celular.</p>
                       </div>
-                      <div className="mobile-photo-actions-v9">
-                        <label className="admin-button-v5">
+                      <div className="mobile-photo-actions-catalog">
+                        <label className="admin-button-ui">
                           <Icon name="image" /> {coverPreview ? "Trocar foto" : "Escolher foto"}
                           <input type="file" accept="image/*" hidden onChange={(event) => setCoverFile(event.target.files?.[0] || null)} />
                         </label>
-                        <label className="admin-button-v5 secondary camera-action-v9">
+                        <label className="admin-button-ui secondary camera-action-catalog">
                           <Icon name="mobile" /> Tirar foto
                           <input type="file" accept="image/*" capture="environment" hidden onChange={(event) => setCoverFile(event.target.files?.[0] || null)} />
                         </label>
                         {coverPreview ? (
-                          <button type="button" className="admin-button-v5 ghost danger-text-v9" onClick={() => { setCoverFile(null); update("image_url", ""); }}>
+                          <button type="button" className="admin-button-ui ghost danger-text-catalog" onClick={() => { setCoverFile(null); update("image_url", ""); }}>
                             <Icon name="trash" /> Remover capa
                           </button>
                         ) : null}
                       </div>
-                      {coverFile ? <small className="selected-file-v9">Selecionada: {coverFile.name}</small> : null}
-                      <details className="image-url-details-v9">
+                      {coverFile ? <small className="selected-file-catalog">Selecionada: {coverFile.name}</small> : null}
+                      <details className="image-url-details-catalog">
                         <summary>Usar URL de uma imagem</summary>
                         <label>
                           <span>URL da imagem</span>
@@ -727,45 +727,45 @@ export default function ProductsAdmin() {
                     </div>
                   </div>
 
-                  <div className="gallery-editor-v5 gallery-editor-v9">
-                    <div className="gallery-heading-v9">
+                  <div className="gallery-editor-ui gallery-editor-catalog">
+                    <div className="gallery-heading-catalog">
                       <div>
                         <h3>Galeria do produto</h3>
                         <p>Adicione outras fotos e toque em uma delas para definir como capa.</p>
                       </div>
-                      <label className="admin-button-v5">
+                      <label className="admin-button-ui">
                         <Icon name="plus" /> Adicionar fotos
                         <input type="file" accept="image/*" multiple hidden onChange={(event) => setGalleryFiles(Array.from(event.target.files || []))} />
                       </label>
                     </div>
-                    {galleryFiles.length ? <div className="pending-gallery-v9"><Icon name="check" /> {galleryFiles.length} foto(s) pronta(s) para enviar ao salvar.</div> : null}
-                    <div className="gallery-grid-v5 gallery-grid-v9">
+                    {galleryFiles.length ? <div className="pending-gallery-catalog"><Icon name="check" /> {galleryFiles.length} foto(s) pronta(s) para enviar ao salvar.</div> : null}
+                    <div className="gallery-grid-ui gallery-grid-catalog">
                       {gallery.map((image) => (
-                        <article key={image.id} className={image.is_cover ? "is-cover-v9" : ""}>
+                        <article key={image.id} className={image.is_cover ? "is-cover-catalog" : ""}>
                           <img src={image.image_url} alt="Foto do produto" />
-                          <div className="gallery-card-actions-v9">
+                          <div className="gallery-card-actions-catalog">
                             {image.is_cover ? <b>Capa atual</b> : <button type="button" onClick={() => void makeCover(image)}>Usar como capa</button>}
                             <button type="button" className="danger" onClick={() => void removeGallery(image)} aria-label="Remover imagem"><Icon name="trash" /></button>
                           </div>
                         </article>
                       ))}
                     </div>
-                    {!gallery.length ? <div className="empty-gallery-v9"><Icon name="image" />A galeria ainda não possui fotos.</div> : null}
+                    {!gallery.length ? <div className="empty-gallery-catalog"><Icon name="image" />A galeria ainda não possui fotos.</div> : null}
                   </div>
                 </div>
               ) : null}
 
               {tab === "display" ? (
-                <div className="admin-form-grid-v5 product-form-grid-v9">
-                  <label className="checkbox-card-v5 full">
+                <div className="admin-form-grid-ui product-form-grid-catalog">
+                  <label className="checkbox-card-ui full">
                     <input type="checkbox" checked={form.is_active} onChange={(event) => update("is_active", event.target.checked)} />
                     <span><strong>Publicado</strong><small>O produto fica visível no site.</small></span>
                   </label>
-                  <label className="checkbox-card-v5 full">
+                  <label className="checkbox-card-ui full">
                     <input type="checkbox" checked={form.is_video_product} onChange={(event) => update("is_video_product", event.target.checked)} />
                     <span><strong>Produto de vídeo</strong><small>Aparece na seção principal para quem veio da bio.</small></span>
                   </label>
-                  <label className="checkbox-card-v5 full">
+                  <label className="checkbox-card-ui full">
                     <input type="checkbox" checked={form.is_pinned} onChange={(event) => update("is_pinned", event.target.checked)} />
                     <span><strong>Fixar no topo</strong><small>Fica antes dos demais produtos da mesma seção.</small></span>
                   </label>
@@ -789,7 +789,7 @@ export default function ProductsAdmin() {
               ) : null}
 
               {tab === "seo" ? (
-                <div className="admin-form-grid-v5 product-form-grid-v9">
+                <div className="admin-form-grid-ui product-form-grid-catalog">
                   <label className="full">
                     <span>Título no Google</span>
                     <input value={form.seo_title} onChange={(event) => update("seo_title", event.target.value)} placeholder={form.name || "Título do produto"} />
@@ -800,7 +800,7 @@ export default function ProductsAdmin() {
                     <textarea rows={5} value={form.seo_description} onChange={(event) => update("seo_description", event.target.value)} placeholder={form.short_description || "Descrição curta do produto"} />
                     <small>{form.seo_description.length}/160 caracteres</small>
                   </label>
-                  <div className="seo-preview-v5 full">
+                  <div className="seo-preview-ui full">
                     <small>PRÉVIA</small>
                     <h3>{form.seo_title || form.name || "Nome do produto"}</h3>
                     <span>hs-achadinhos.vercel.app/produto/{form.slug || "produto"}</span>
@@ -810,9 +810,9 @@ export default function ProductsAdmin() {
               ) : null}
             </div>
 
-            <div className="product-editor-footer-v5 product-editor-footer-v9">
-              <button type="button" className="admin-button-v5 secondary" onClick={closeEditor}>Cancelar</button>
-              <button className="admin-button-v5" disabled={saving}>
+            <div className="product-editor-footer-ui product-editor-footer-catalog">
+              <button type="button" className="admin-button-ui secondary" onClick={closeEditor}>Cancelar</button>
+              <button className="admin-button-ui" disabled={saving}>
                 <Icon name="save" /> {saving ? "Salvando..." : "Salvar produto"}
               </button>
             </div>
@@ -820,17 +820,17 @@ export default function ProductsAdmin() {
         </section>
       ) : null}
 
-      <section className={`admin-card-v5 catalog-list-card-v5 catalog-list-card-v9 ${selectedIds.length ? "has-mobile-bulk-v9" : ""}`}>
-        <div className="catalog-toolbar-v5 catalog-toolbar-v9">
-          <div className="catalog-search-v9">
+      <section className={`admin-card-ui catalog-list-card-ui catalog-list-card-catalog ${selectedIds.length ? "has-mobile-bulk-catalog" : ""}`}>
+        <div className="catalog-toolbar-ui catalog-toolbar-catalog">
+          <div className="catalog-search-catalog">
             <Icon name="search" />
             <input placeholder="Buscar pelo nome completo, código ou categoria" value={search} onChange={(event) => setSearch(event.target.value)} />
           </div>
-          <button type="button" className={`mobile-filter-toggle-v9 ${filtersOpen ? "active" : ""}`} onClick={() => setFiltersOpen((current) => !current)}>
+          <button type="button" className={`mobile-filter-toggle-catalog ${filtersOpen ? "active" : ""}`} onClick={() => setFiltersOpen((current) => !current)}>
             <Icon name="filter" /> Filtros
             {(status !== "all" || categoryFilter !== "all" || sort !== "recent") ? <b>•</b> : null}
           </button>
-          <div className={`catalog-filter-fields-v9 ${filtersOpen ? "open" : ""}`}>
+          <div className={`catalog-filter-fields-catalog ${filtersOpen ? "open" : ""}`}>
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
               <option value="all">Todos os status</option>
               <option value="active">Publicados</option>
@@ -852,17 +852,17 @@ export default function ProductsAdmin() {
               <option value="name">Nome A-Z</option>
             </select>
           </div>
-          <b className="catalog-result-count-v9">{visible.length}</b>
+          <b className="catalog-result-count-catalog">{visible.length}</b>
         </div>
 
-        <div className="mobile-quick-filters-v9">
+        <div className="mobile-quick-filters-catalog">
           <button className={status === "all" ? "active" : ""} onClick={() => setStatus("all")}>Todos</button>
           <button className={status === "no-image" ? "active" : ""} onClick={() => setStatus("no-image")}>Sem foto</button>
           <button className={status === "inactive" ? "active" : ""} onClick={() => setStatus("inactive")}>Rascunhos</button>
           <button className={status === "active" ? "active" : ""} onClick={() => setStatus("active")}>Publicados</button>
         </div>
 
-        <div className="product-selection-v72 product-selection-v9">
+        <div className="product-selection-v72 product-selection-catalog">
           <label>
             <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectVisible} disabled={!visible.length} />
             <span>{allVisibleSelected ? "Desmarcar todos" : `Selecionar todos (${visible.length})`}</span>
@@ -871,19 +871,19 @@ export default function ProductsAdmin() {
         </div>
 
         {selectedIds.length ? (
-          <div className="product-bulk-actions-v72 product-bulk-actions-v8 product-bulk-actions-v9">
-            <div className="bulk-summary-v9">
+          <div className="product-bulk-actions-v72 product-bulk-actions-ops product-bulk-actions-catalog">
+            <div className="bulk-summary-catalog">
               <strong>{selectedIds.length} selecionado(s)</strong>
               <button type="button" onClick={clearSelection}>Limpar</button>
             </div>
-            <div className="bulk-category-v8 bulk-category-v9">
+            <div className="bulk-category-ops bulk-category-catalog">
               <select value={bulkCategory} onChange={(event) => setBulkCategory(event.target.value)}>
                 <option value="">Alterar categoria...</option>
                 {categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}
               </select>
               <button type="button" onClick={() => void setSelectedCategory()} disabled={bulkSaving || !bulkCategory}>Aplicar</button>
             </div>
-            <div className="bulk-action-scroll-v9">
+            <div className="bulk-action-scroll-catalog">
               <button type="button" className="bulk-publish-v72" onClick={() => void setSelectedStatus(true)} disabled={bulkSaving}><Icon name="eye" />Publicar</button>
               <button type="button" className="bulk-draft-v72" onClick={() => void setSelectedStatus(false)} disabled={bulkSaving}>Rascunho</button>
               <button type="button" onClick={() => void setSelectedField("is_video_product", true, "marcado(s) como produto de vídeo")} disabled={bulkSaving}>Do vídeo</button>
@@ -893,14 +893,14 @@ export default function ProductsAdmin() {
           </div>
         ) : null}
 
-        <div className="product-table-v5 product-table-desktop-v9">
-          <div className="product-table-head-v5">
+        <div className="product-table-ui product-table-desktop-catalog">
+          <div className="product-table-head-ui">
             <span className="product-head-select-v72"><input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectVisible} disabled={!visible.length} aria-label="Selecionar todos" />Produto</span>
             <span>Categoria</span><span>Preço</span><span>Cliques</span><span>Status</span><span>Ações</span>
           </div>
           {visible.map((product) => (
             <article key={product.id} className={selectedIds.includes(product.id) ? "selected-v72" : ""}>
-              <div className="product-cell-v5 product-cell-desktop-v9">
+              <div className="product-cell-ui product-cell-desktop-catalog">
                 <input className="product-row-check-v72" type="checkbox" checked={selectedIds.includes(product.id)} onChange={() => toggleSelection(product.id)} aria-label={`Selecionar ${product.name}`} />
                 {product.image_url ? <img src={product.image_url} alt="" /> : <span><Icon name="image" /></span>}
                 <div><strong>{product.name}</strong><small>{product.product_code ? `Código ${product.product_code}` : "Sem código"}</small></div>
@@ -908,8 +908,8 @@ export default function ProductsAdmin() {
               <span>{product.categories?.name || "Sem categoria"}</span>
               <strong>{formatPrice(product.current_price) || "—"}</strong>
               <span>{product.click_count}</span>
-              <div className="status-stack-v5"><b className={product.is_active ? "published" : "draft"}>{product.is_active ? "Publicado" : "Rascunho"}</b>{product.is_video_product ? <small>Do vídeo</small> : null}{product.is_pinned ? <small>Fixado</small> : null}</div>
-              <div className="table-actions-v5">
+              <div className="status-stack-ui"><b className={product.is_active ? "published" : "draft"}>{product.is_active ? "Publicado" : "Rascunho"}</b>{product.is_video_product ? <small>Do vídeo</small> : null}{product.is_pinned ? <small>Fixado</small> : null}</div>
+              <div className="table-actions-ui">
                 <button title="Editar" onClick={() => edit(product)}><Icon name="edit" /></button>
                 <button title="Imagens" onClick={() => edit(product, "media")}><Icon name="image" /></button>
                 <button title="Duplicar" onClick={() => void duplicate(product)}><Icon name="copy" /></button>
@@ -920,28 +920,28 @@ export default function ProductsAdmin() {
           ))}
         </div>
 
-        <div className="product-mobile-list-v9">
+        <div className="product-mobile-list-catalog">
           {visible.map((product) => {
             const expanded = expandedId === product.id;
             const uploading = quickImageId === product.id;
             return (
-              <article key={product.id} className={`product-mobile-card-v9 ${selectedIds.includes(product.id) ? "selected-v9" : ""}`}>
-                <div className="product-mobile-card-top-v9">
-                  <label className="product-mobile-check-v9">
+              <article key={product.id} className={`product-mobile-card-catalog ${selectedIds.includes(product.id) ? "selected-catalog" : ""}`}>
+                <div className="product-mobile-card-top-catalog">
+                  <label className="product-mobile-check-catalog">
                     <input type="checkbox" checked={selectedIds.includes(product.id)} onChange={() => toggleSelection(product.id)} />
                     <span>Selecionar</span>
                   </label>
-                  <div className="mobile-statuses-v9">
+                  <div className="mobile-statuses-catalog">
                     <b className={product.is_active ? "published" : "draft"}>{product.is_active ? "Publicado" : "Rascunho"}</b>
                     {product.is_pinned ? <small>Fixado</small> : null}
                     {product.is_video_product ? <small>Do vídeo</small> : null}
                   </div>
                 </div>
 
-                <div className="product-mobile-main-v9">
-                  <div className={`product-mobile-image-v9 ${product.image_url ? "has-image" : "missing"}`}>
+                <div className="product-mobile-main-catalog">
+                  <div className={`product-mobile-image-catalog ${product.image_url ? "has-image" : "missing"}`}>
                     {product.image_url ? <img src={product.image_url} alt="" /> : <span><Icon name="image" size={28} />Sem foto</span>}
-                    <label className={`quick-photo-button-v9 ${uploading ? "loading" : ""}`}>
+                    <label className={`quick-photo-button-catalog ${uploading ? "loading" : ""}`}>
                       <Icon name="image" /> {uploading ? "Enviando..." : product.image_url ? "Trocar" : "Adicionar"}
                       <input
                         type="file"
@@ -956,9 +956,9 @@ export default function ProductsAdmin() {
                     </label>
                   </div>
 
-                  <div className="product-mobile-info-v9">
+                  <div className="product-mobile-info-catalog">
                     <h3>{product.name}</h3>
-                    <div className="product-mobile-meta-v9">
+                    <div className="product-mobile-meta-catalog">
                       <span><Icon name="categories" />{product.categories?.name || "Sem categoria"}</span>
                       <span><Icon name="tag" />{formatPrice(product.current_price) || "Sem preço"}</span>
                       <span><Icon name="code" />{product.product_code || "Sem código"}</span>
@@ -966,20 +966,20 @@ export default function ProductsAdmin() {
                   </div>
                 </div>
 
-                <div className="product-mobile-primary-actions-v9">
+                <div className="product-mobile-primary-actions-catalog">
                   <button className="primary" onClick={() => edit(product)}><Icon name="edit" />Editar produto</button>
                   <button onClick={() => edit(product, "media")}><Icon name="image" />Fotos</button>
                   <button className={expanded ? "active" : ""} onClick={() => setExpandedId(expanded ? null : product.id)}><Icon name="more" /></button>
                 </div>
 
                 {expanded ? (
-                  <div className="product-mobile-more-v9">
-                    <div className="product-mobile-details-v9">
+                  <div className="product-mobile-more-catalog">
+                    <div className="product-mobile-details-catalog">
                       <span><strong>{product.click_count}</strong> cliques</span>
                       <span><strong>{product.product_images?.length || 0}</strong> fotos</span>
                       <span><strong>{product.short_description ? "Sim" : "Não"}</strong> descrição</span>
                     </div>
-                    <div className="product-mobile-secondary-actions-v9">
+                    <div className="product-mobile-secondary-actions-catalog">
                       <button onClick={() => void toggle(product, "is_active")}><Icon name="eye" />{product.is_active ? "Mover para rascunho" : "Publicar"}</button>
                       <button onClick={() => void toggle(product, "is_pinned")}><Icon name="up" />{product.is_pinned ? "Desafixar" : "Fixar"}</button>
                       <button onClick={() => void duplicate(product)}><Icon name="copy" />Duplicar</button>
@@ -992,7 +992,7 @@ export default function ProductsAdmin() {
           })}
         </div>
 
-        {!visible.length ? <div className="empty-v5"><Icon name="products" size={34} /><h3>Nenhum produto encontrado</h3><p>Altere os filtros ou cadastre um novo produto.</p></div> : null}
+        {!visible.length ? <div className="empty-ui"><Icon name="products" size={34} /><h3>Nenhum produto encontrado</h3><p>Altere os filtros ou cadastre um novo produto.</p></div> : null}
       </section>
     </>
   );

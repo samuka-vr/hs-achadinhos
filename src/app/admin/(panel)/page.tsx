@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
       <article><span><Icon name="products" /></span><div><small>Produtos publicados</small><strong>{published}</strong><em>{products.length} cadastrados</em></div></article>
       <article><span><Icon name="eye" /></span><div><small>Visitas hoje</small><strong>{stats.todayViews}</strong><em>acessos públicos</em></div></article>
       <article><span><Icon name="click" /></span><div><small>Cliques hoje</small><strong>{stats.todayClicks}</strong><em>{stats.sevenClicks} em 7 dias</em></div></article>
-      <article><span><Icon name="search" /></span><div><small>Buscas sem resultado</small><strong>{stats.zeroSearches}</strong><em>termos para revisar</em></div></article>
+      <Link href="/admin/buscas" className="ha-metric-link"><span><Icon name="search" /></span><div><small>Buscas sem resultado</small><strong>{stats.zeroSearches}</strong><em>Revisar e limpar termos</em></div><Icon name="arrow" size={16} /></Link>
     </section>
 
     <section className="ha-dashboard-grid">
@@ -84,7 +84,7 @@ export default function AdminDashboardPage() {
 
     <section className="ha-dashboard-grid ha-dashboard-grid--bottom">
       <article className="ha-panel"><header><div><span>MAIS ACESSADOS</span><h2>Produtos em destaque</h2></div><Link href="/admin/produtos">Ver produtos</Link></header><div className="ha-ranking">{products.slice(0, 6).map((product, index) => <div key={product.id}><b>{String(index + 1).padStart(2, "0")}</b>{product.image_url ? <img src={product.image_url} alt="" /> : <span><Icon name="image" size={17} /></span>}<div><strong>{product.name}</strong><small>{product.product_code || product.categories?.name || "Sem categoria"}</small></div><em>{product.click_count}</em></div>)}</div></article>
-      <article className="ha-panel"><header><div><span>PESQUISAS</span><h2>O que estão procurando</h2></div><Link href="/admin/analytics">Detalhes</Link></header><div className="ha-query-list">{stats.topQueries.map(([query, count]) => <div key={query}><strong>{query}</strong><span>{count}</span></div>)}</div>{!stats.topQueries.length ? <div className="ha-empty-mini">Ainda não há pesquisas registradas.</div> : null}</article>
+      <article className="ha-panel"><header><div><span>PESQUISAS</span><h2>O que estão procurando</h2></div><Link href="/admin/buscas">Gerenciar termos</Link></header><div className="ha-query-list">{stats.topQueries.map(([query, count]) => <div key={query}><strong>{query}</strong><span>{count}</span></div>)}</div>{!stats.topQueries.length ? <div className="ha-empty-mini">Ainda não há pesquisas registradas.</div> : null}</article>
     </section>
     <footer className="ha-dashboard__footer"><span><Icon name="categories" />{categoryCount} categorias</span><span><Icon name="products" />{products.length} produtos</span></footer>
   </div>;

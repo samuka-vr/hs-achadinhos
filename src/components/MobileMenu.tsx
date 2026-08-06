@@ -28,7 +28,7 @@ export default function MobileMenu({ categories, settings, navigation }: { categ
     ["/", "Início", "home"],
     ["/#produtos-dos-videos", "Produtos dos vídeos", "sparkles"],
     ["/#categorias", "Categorias", "categories"],
-    ["/#produtos", "Catálogo completo", "products"],
+    ["/catalogo", "Catálogo completo", "products"],
   ] as const;
   const socials = [
     ["instagram", settings.instagram, "Instagram"], ["tiktok", settings.tiktok, "TikTok"], ["store", settings.shopee_showcase, "Shopee"], ["whatsapp", settings.whatsapp, "WhatsApp"], ["youtube", settings.youtube, "YouTube"],

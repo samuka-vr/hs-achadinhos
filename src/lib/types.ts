@@ -82,6 +82,13 @@ export type SiteSettings = {
   muted_text_color: string;
   border_color: string;
   button_text_color: string;
+  button_primary_color: string;
+  button_primary_hover_color: string;
+  button_secondary_color: string;
+  button_secondary_text_color: string;
+  link_color: string;
+  success_color: string;
+  danger_color: string;
   font_family: string;
   heading_font_family: string;
   container_width: number;
